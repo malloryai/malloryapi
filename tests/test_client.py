@@ -1,7 +1,5 @@
 """Tests for client construction and resource access."""
 
-import os
-
 import pytest
 
 from malloryapi import AsyncMalloryApi, MalloryApi

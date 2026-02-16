@@ -41,7 +41,7 @@ class TestVulnerabilities:
 
     def test_list_pagination(self, client, httpx_mock: HTTPXMock):
         httpx_mock.add_response(json=VULN_LIST_RESPONSE)
-        result = client.vulnerabilities.list(
+        client.vulnerabilities.list(
             offset=0, limit=10
         )
         request = httpx_mock.get_request()
@@ -91,7 +91,7 @@ class TestVulnerabilities:
 
     def test_enrich(self, client, httpx_mock: HTTPXMock):
         httpx_mock.add_response(json={"status": "started"})
-        result = client.vulnerabilities.enrich("abc-123")
+        client.vulnerabilities.enrich("abc-123")
         request = httpx_mock.get_request()
         assert request.method == "POST"
         assert "/vulnerabilities/abc-123/enrich" in str(
