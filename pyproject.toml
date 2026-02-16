@@ -25,6 +25,9 @@ dependencies = [
     "httpx>=0.27",
 ]
 
+[project.scripts]
+malloryapi = "malloryapi.cli:main"
+
 [project.urls]
 Homepage = "https://mallory.ai"
 Documentation = "https://docs.mallory.ai"
