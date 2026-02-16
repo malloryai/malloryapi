@@ -1,6 +1,6 @@
 [project]
 name = "malloryapi"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Official Python client for the Mallory threat intelligence API"
 authors = [
     {name = "Mallory AI", email = "hello@mallory.ai"},
@@ -31,8 +31,17 @@ Documentation = "https://docs.mallory.ai"
 Repository = "https://github.com/malloryai/malloryapi"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.version.raw-options]
+version_scheme = "no-guess-dev"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/malloryapi/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/malloryapi"]
