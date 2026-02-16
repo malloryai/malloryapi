@@ -15,3 +15,5 @@ venv/
 .coverage
 htmlcov/
 src/malloryapi/_version.py
+.pdm-python
+pdm.lock

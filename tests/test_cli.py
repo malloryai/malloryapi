@@ -7,7 +7,6 @@ import os
 from io import StringIO
 from unittest.mock import patch
 
-import pytest
 from pytest_httpx import HTTPXMock
 
 from malloryapi.cli import main
@@ -20,7 +19,7 @@ def _run_cli(argv: list[str], env: dict | None = None) -> tuple[int, str, str]:
     env = env or {}
     with patch("sys.argv", ["malloryapi"] + argv), patch(
         "sys.stdout", StringIO()
-    ), patch("sys.stderr", StringIO()) as stderr, patch(
+    ), patch("sys.stderr", StringIO()), patch(
         "sys.stdin", StringIO()
     ):
         out = StringIO()
