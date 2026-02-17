@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from malloryapi._http import (
     DEFAULT_BASE_URL,
     DEFAULT_TIMEOUT,
@@ -48,6 +50,7 @@ from malloryapi.resources.threat_actors import (
     AsyncThreatActors,
     ThreatActors,
 )
+from malloryapi.resources.user import AsyncUser, User
 from malloryapi.resources.vulnerabilities import (
     AsyncVulnerabilities,
     Vulnerabilities,
@@ -103,6 +106,26 @@ class MalloryApi:
         # Analytics
         self.mentions = Mentions(self._http)
         self.search = Search(self._http)
+
+        # Account
+        self.user = User(self._http)
+
+    def health(self) -> dict[str, Any]:
+        """Check API health (unauthenticated).
+
+        Returns ``{"message": "OK", "status": "HEALTHY"}`` when the
+        API is reachable and operational.
+        """
+        return self._http.get("/health")
+
+    def whoami(self) -> dict[str, Any]:
+        """Return the current authenticated user's information.
+
+        Shortcut for ``client.user.me()``.  Verifies that the
+        configured API key is valid and returns user details
+        (uuid, email, first_name, last_name).
+        """
+        return self.user.me()
 
     def close(self) -> None:
         """Close the underlying HTTP connection."""
@@ -164,6 +187,26 @@ class AsyncMalloryApi:
         # Analytics
         self.mentions = AsyncMentions(self._http)
         self.search = AsyncSearch(self._http)
+
+        # Account
+        self.user = AsyncUser(self._http)
+
+    async def health(self) -> dict[str, Any]:
+        """Check API health (unauthenticated).
+
+        Returns ``{"message": "OK", "status": "HEALTHY"}`` when the
+        API is reachable and operational.
+        """
+        return await self._http.get("/health")
+
+    async def whoami(self) -> dict[str, Any]:
+        """Return the current authenticated user's information.
+
+        Shortcut for ``client.user.me()``.  Verifies that the
+        configured API key is valid and returns user details
+        (uuid, email, first_name, last_name).
+        """
+        return await self.user.me()
 
     async def aclose(self) -> None:
         """Close the underlying HTTP connection."""
