@@ -35,6 +35,29 @@ class Breaches(SyncResource):
             identifier, "organizations", params=kwargs
         )
 
+    def attack_patterns(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "attack-patterns", params=kwargs
+        )
+
+    def malware(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "malware", params=kwargs)
+
+    def mentions(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "mentions", params=kwargs)
+
+    def threat_actors(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "threat-actors", params=kwargs
+        )
+
+    def delete(self, identifier: str) -> Any:
+        return self._delete(identifier)
+
 
 class AsyncBreaches(AsyncResource):
     _path = "/breaches"
@@ -62,3 +85,34 @@ class AsyncBreaches(AsyncResource):
         return await self._sub(
             identifier, "organizations", params=kwargs
         )
+
+    async def attack_patterns(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "attack-patterns", params=kwargs
+        )
+
+    async def malware(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware", params=kwargs
+        )
+
+    async def mentions(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "mentions", params=kwargs
+        )
+
+    async def threat_actors(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "threat-actors", params=kwargs
+        )
+
+    async def delete(self, identifier: str) -> Any:
+        return await self._delete(identifier)

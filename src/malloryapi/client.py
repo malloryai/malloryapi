@@ -19,6 +19,7 @@ from malloryapi.resources.content_chunks import (
     AsyncContentChunks,
     ContentChunks,
 )
+from malloryapi.resources.dashboards import AsyncDashboards, Dashboards
 from malloryapi.resources.detection_signatures import (
     AsyncDetectionSignatures,
     DetectionSignatures,
@@ -28,8 +29,16 @@ from malloryapi.resources.exploitations import (
     Exploitations,
 )
 from malloryapi.resources.exploits import AsyncExploits, Exploits
+from malloryapi.resources.exports import AsyncExports, Exports
+from malloryapi.resources.industries import AsyncIndustries, Industries
+from malloryapi.resources.integrations import (
+    AsyncIntegrations,
+    Integrations,
+)
 from malloryapi.resources.malware import AsyncMalware, Malware
 from malloryapi.resources.mentions import AsyncMentions, Mentions
+from malloryapi.resources.observables import AsyncObservables, Observables
+from malloryapi.resources.opinions import AsyncOpinions, Opinions
 from malloryapi.resources.organizations import (
     AsyncOrganizations,
     Organizations,
@@ -39,6 +48,7 @@ from malloryapi.resources.references import (
     AsyncReferences,
     References,
 )
+from malloryapi.resources.schedules import AsyncSchedules, Schedules
 from malloryapi.resources.search import AsyncSearch, Search
 from malloryapi.resources.sources import AsyncSources, Sources
 from malloryapi.resources.stories import AsyncStories, Stories
@@ -59,6 +69,11 @@ from malloryapi.resources.weaknesses import (
     AsyncWeaknesses,
     Weaknesses,
 )
+from malloryapi.resources.vulnerable_configurations import (
+    AsyncVulnerableConfigurations,
+    VulnerableConfigurations,
+)
+from malloryapi.resources.workspaces import AsyncWorkspaces, Workspaces
 
 
 class MalloryApi:
@@ -103,9 +118,24 @@ class MalloryApi:
         self.sources = Sources(self._http)
         self.content_chunks = ContentChunks(self._http)
 
+        # Observables & Opinions
+        self.observables = Observables(self._http)
+        self.opinions = Opinions(self._http)
+
         # Analytics
         self.mentions = Mentions(self._http)
         self.search = Search(self._http)
+        self.dashboards = Dashboards(self._http)
+
+        # Platform
+        self.industries = Industries(self._http)
+        self.schedules = Schedules(self._http)
+        self.workspaces = Workspaces(self._http)
+        self.exports = Exports(self._http)
+        self.integrations = Integrations(self._http)
+        self.vulnerable_configurations = VulnerableConfigurations(
+            self._http
+        )
 
         # Account
         self.user = User(self._http)
@@ -184,9 +214,24 @@ class AsyncMalloryApi:
         self.sources = AsyncSources(self._http)
         self.content_chunks = AsyncContentChunks(self._http)
 
+        # Observables & Opinions
+        self.observables = AsyncObservables(self._http)
+        self.opinions = AsyncOpinions(self._http)
+
         # Analytics
         self.mentions = AsyncMentions(self._http)
         self.search = AsyncSearch(self._http)
+        self.dashboards = AsyncDashboards(self._http)
+
+        # Platform
+        self.industries = AsyncIndustries(self._http)
+        self.schedules = AsyncSchedules(self._http)
+        self.workspaces = AsyncWorkspaces(self._http)
+        self.exports = AsyncExports(self._http)
+        self.integrations = AsyncIntegrations(self._http)
+        self.vulnerable_configurations = (
+            AsyncVulnerableConfigurations(self._http)
+        )
 
         # Account
         self.user = AsyncUser(self._http)

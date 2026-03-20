@@ -16,6 +16,9 @@ class Sources(SyncResource):
     ) -> PaginatedResponse:
         return self._list(offset=offset, limit=limit, **kwargs)
 
+    def create(self, data: dict[str, Any]) -> dict[str, Any]:
+        return self._post(json=data)
+
     def statistics(self, source: str) -> dict[str, Any]:
         return self._http.get(
             f"{self._path}/{source}/statistics"
@@ -31,6 +34,9 @@ class AsyncSources(AsyncResource):
         return await self._list(
             offset=offset, limit=limit, **kwargs
         )
+
+    async def create(self, data: dict[str, Any]) -> dict[str, Any]:
+        return await self._post(json=data)
 
     async def statistics(self, source: str) -> dict[str, Any]:
         return await self._http.get(

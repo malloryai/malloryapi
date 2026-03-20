@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Literal
+from urllib.parse import quote
 
 from malloryapi._http import AsyncHttpClient, SyncHttpClient
 from malloryapi._types import PaginatedResponse
@@ -31,7 +32,7 @@ class SyncResource:
         return _parse_paginated(data)
 
     def _get(self, identifier: str) -> dict[str, Any]:
-        return self._http.get(f"{self._path}/{identifier}")
+        return self._http.get(f"{self._path}/{quote(identifier, safe='')}")
 
     def _sub(
         self,
@@ -40,7 +41,7 @@ class SyncResource:
         params: dict[str, Any] | None = None,
     ) -> Any:
         return self._http.get(
-            f"{self._path}/{identifier}/{sub}", params=params
+            f"{self._path}/{quote(identifier, safe='')}/{sub}", params=params
         )
 
     def _post(
@@ -49,18 +50,24 @@ class SyncResource:
         json: Any = None,
         params: dict[str, Any] | None = None,
     ) -> Any:
-        return self._http.post(
-            path or self._path, json=json, params=params
-        )
+        return self._http.post(path or self._path, json=json, params=params)
 
     def _patch(
         self,
         identifier: str,
         json: Any = None,
     ) -> Any:
-        return self._http.patch(
-            f"{self._path}/{identifier}", json=json
-        )
+        return self._http.patch(f"{self._path}/{quote(identifier, safe='')}", json=json)
+
+    def _put(
+        self,
+        identifier: str,
+        json: Any = None,
+    ) -> Any:
+        return self._http.put(f"{self._path}/{quote(identifier, safe='')}", json=json)
+
+    def _delete(self, identifier: str) -> Any:
+        return self._http.delete(f"{self._path}/{quote(identifier, safe='')}")
 
 
 class AsyncResource:
@@ -82,7 +89,7 @@ class AsyncResource:
         return _parse_paginated(data)
 
     async def _get(self, identifier: str) -> dict[str, Any]:
-        return await self._http.get(f"{self._path}/{identifier}")
+        return await self._http.get(f"{self._path}/{quote(identifier, safe='')}")
 
     async def _sub(
         self,
@@ -91,7 +98,7 @@ class AsyncResource:
         params: dict[str, Any] | None = None,
     ) -> Any:
         return await self._http.get(
-            f"{self._path}/{identifier}/{sub}", params=params
+            f"{self._path}/{quote(identifier, safe='')}/{sub}", params=params
         )
 
     async def _post(
@@ -100,9 +107,7 @@ class AsyncResource:
         json: Any = None,
         params: dict[str, Any] | None = None,
     ) -> Any:
-        return await self._http.post(
-            path or self._path, json=json, params=params
-        )
+        return await self._http.post(path or self._path, json=json, params=params)
 
     async def _patch(
         self,
@@ -110,8 +115,20 @@ class AsyncResource:
         json: Any = None,
     ) -> Any:
         return await self._http.patch(
-            f"{self._path}/{identifier}", json=json
+            f"{self._path}/{quote(identifier, safe='')}", json=json
         )
+
+    async def _put(
+        self,
+        identifier: str,
+        json: Any = None,
+    ) -> Any:
+        return await self._http.put(
+            f"{self._path}/{quote(identifier, safe='')}", json=json
+        )
+
+    async def _delete(self, identifier: str) -> Any:
+        return await self._http.delete(f"{self._path}/{quote(identifier, safe='')}")
 
 
 # -- helpers -----------------------------------------------------------
@@ -127,7 +144,5 @@ def _parse_paginated(data: Any) -> PaginatedResponse:
             limit=data.get("limit", 100),
         )
     if isinstance(data, list):
-        return PaginatedResponse(
-            items=data, total=len(data), offset=0, limit=len(data)
-        )
+        return PaginatedResponse(items=data, total=len(data), offset=0, limit=len(data))
     return PaginatedResponse()
