@@ -62,6 +62,18 @@ class SyncResource:
             f"{self._path}/{identifier}", json=json
         )
 
+    def _put(
+        self,
+        identifier: str,
+        json: Any = None,
+    ) -> Any:
+        return self._http.put(
+            f"{self._path}/{identifier}", json=json
+        )
+
+    def _delete(self, identifier: str) -> Any:
+        return self._http.delete(f"{self._path}/{identifier}")
+
 
 class AsyncResource:
     """Base class for asynchronous resource clients."""
@@ -112,6 +124,18 @@ class AsyncResource:
         return await self._http.patch(
             f"{self._path}/{identifier}", json=json
         )
+
+    async def _put(
+        self,
+        identifier: str,
+        json: Any = None,
+    ) -> Any:
+        return await self._http.put(
+            f"{self._path}/{identifier}", json=json
+        )
+
+    async def _delete(self, identifier: str) -> Any:
+        return await self._http.delete(f"{self._path}/{identifier}")
 
 
 # -- helpers -----------------------------------------------------------

@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 from malloryapi._types import PaginatedResponse
-from malloryapi.resources._base import AsyncResource, SyncResource
+from malloryapi.resources._base import (
+    AsyncResource,
+    SyncResource,
+    _parse_paginated,
+)
 
 
 class References(SyncResource):
@@ -67,6 +71,14 @@ class References(SyncResource):
             identifier, "vulnerability-mentions", params=kwargs
         )
 
+    def observables(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = self._sub(
+            identifier, "observables", params=kwargs
+        )
+        return _parse_paginated(data)
+
 
 class AsyncReferences(AsyncResource):
     _path = "/references"
@@ -126,3 +138,11 @@ class AsyncReferences(AsyncResource):
         return await self._sub(
             identifier, "vulnerability-mentions", params=kwargs
         )
+
+    async def observables(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier, "observables", params=kwargs
+        )
+        return _parse_paginated(data)

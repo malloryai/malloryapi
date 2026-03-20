@@ -62,6 +62,9 @@ class Products(SyncResource):
     ) -> dict[str, Any]:
         return self._patch(identifier, json=data)
 
+    def delete(self, identifier: str) -> Any:
+        return self._delete(identifier)
+
     def enrich(self, identifier: str) -> dict[str, Any]:
         return self._http.post(
             f"{self._path}/{identifier}/enrich"
@@ -123,6 +126,9 @@ class AsyncProducts(AsyncResource):
         self, identifier: str, data: dict[str, Any]
     ) -> dict[str, Any]:
         return await self._patch(identifier, json=data)
+
+    async def delete(self, identifier: str) -> Any:
+        return await self._delete(identifier)
 
     async def enrich(self, identifier: str) -> dict[str, Any]:
         return await self._http.post(

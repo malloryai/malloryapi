@@ -57,6 +57,19 @@ class ThreatActors(SyncResource):
             identifier, "attack_patterns", params=kwargs
         )
 
+    def exploitations(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "exploitations", params=kwargs
+        )
+
+    def malware(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "malware", params=kwargs)
+
+    def delete(self, identifier: str) -> Any:
+        return self._delete(identifier)
+
     def enrich(self, identifier: str) -> dict[str, Any]:
         return self._http.post(
             f"{self._path}/{identifier}/enrich"
@@ -113,6 +126,23 @@ class AsyncThreatActors(AsyncResource):
         return await self._sub(
             identifier, "attack_patterns", params=kwargs
         )
+
+    async def exploitations(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "exploitations", params=kwargs
+        )
+
+    async def malware(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware", params=kwargs
+        )
+
+    async def delete(self, identifier: str) -> Any:
+        return await self._delete(identifier)
 
     async def enrich(self, identifier: str) -> dict[str, Any]:
         return await self._http.post(

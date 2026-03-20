@@ -114,6 +114,16 @@ class SyncHttpClient:
             _handle_error_response(response)
         return response.json()
 
+    def put(
+        self,
+        path: str,
+        json: Any = None,
+    ) -> Any:
+        response = self._client.put(path, json=json)
+        if response.status_code >= 400:
+            _handle_error_response(response)
+        return response.json()
+
     def patch(
         self,
         path: str,
@@ -174,6 +184,16 @@ class AsyncHttpClient:
         response = await self._client.post(
             path, json=json, params=params
         )
+        if response.status_code >= 400:
+            _handle_error_response(response)
+        return response.json()
+
+    async def put(
+        self,
+        path: str,
+        json: Any = None,
+    ) -> Any:
+        response = await self._client.put(path, json=json)
         if response.status_code >= 400:
             _handle_error_response(response)
         return response.json()
