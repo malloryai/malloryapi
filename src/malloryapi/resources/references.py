@@ -79,6 +79,14 @@ class References(SyncResource):
         )
         return _parse_paginated(data)
 
+    def citations(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = self._sub(
+            identifier, "citations", params=kwargs
+        )
+        return _parse_paginated(data)
+
 
 class AsyncReferences(AsyncResource):
     _path = "/references"
@@ -144,5 +152,13 @@ class AsyncReferences(AsyncResource):
     ) -> PaginatedResponse:
         data = await self._sub(
             identifier, "observables", params=kwargs
+        )
+        return _parse_paginated(data)
+
+    async def citations(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier, "citations", params=kwargs
         )
         return _parse_paginated(data)

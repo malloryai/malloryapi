@@ -76,6 +76,24 @@ class Stories(SyncResource):
             data["description"] = description
         return self._patch(identifier, json=data)
 
+    def citations(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = self._sub(identifier, "citations", params=kwargs)
+        return _parse_paginated(data)
+
+    def observables(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = self._sub(identifier, "observables", params=kwargs)
+        return _parse_paginated(data)
+
+    def timeline(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = self._sub(identifier, "timeline", params=kwargs)
+        return _parse_paginated(data)
+
     def delete(self, identifier: str) -> Any:
         return self._delete(identifier)
 
@@ -151,6 +169,30 @@ class AsyncStories(AsyncResource):
         if description is not None:
             data["description"] = description
         return await self._patch(identifier, json=data)
+
+    async def citations(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier, "citations", params=kwargs
+        )
+        return _parse_paginated(data)
+
+    async def observables(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier, "observables", params=kwargs
+        )
+        return _parse_paginated(data)
+
+    async def timeline(
+        self, identifier: str, **kwargs: Any
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier, "timeline", params=kwargs
+        )
+        return _parse_paginated(data)
 
     async def delete(self, identifier: str) -> Any:
         return await self._delete(identifier)
