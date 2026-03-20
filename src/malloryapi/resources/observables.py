@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 from malloryapi._types import PaginatedResponse
 from malloryapi.resources._base import (
@@ -27,9 +28,13 @@ class Observables(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
-            scope=scope, **kwargs,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
+            scope=scope,
+            **kwargs,
         )
 
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -47,12 +52,12 @@ class Observables(SyncResource):
     ) -> dict[str, Any]:
         params = {"scope": scope} if scope else None
         return self._http.get(
-            f"{self._path}/{observable_type}/{name}", params=params
+            f"{self._path}/{quote(observable_type, safe='')}"
+            f"/{quote(name, safe='')}",
+            params=params,
         )
 
-    def update(
-        self, uuid: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    def update(self, uuid: str, data: dict[str, Any]) -> dict[str, Any]:
         return self._patch(uuid, json=data)
 
     def delete(self, uuid: str) -> Any:
@@ -70,9 +75,12 @@ class Observables(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
-            "offset": offset, "limit": limit,
-            "sort": sort, "order": order,
-            "scope": scope, **kwargs,
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "scope": scope,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(uuid, "opinions", params=params)
@@ -91,13 +99,17 @@ class Observables(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
-            "offset": offset, "limit": limit,
-            "sort": sort, "order": order,
-            "scope": scope, **kwargs,
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "scope": scope,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._http.get(
-            f"{self._path}/{observable_type}/{name}/opinions",
+            f"{self._path}/{quote(observable_type, safe='')}"
+            f"/{quote(name, safe='')}/opinions",
             params=params,
         )
         return _parse_paginated(data)
@@ -118,9 +130,13 @@ class AsyncObservables(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return await self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
-            scope=scope, **kwargs,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
+            scope=scope,
+            **kwargs,
         )
 
     async def create(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -138,12 +154,12 @@ class AsyncObservables(AsyncResource):
     ) -> dict[str, Any]:
         params = {"scope": scope} if scope else None
         return await self._http.get(
-            f"{self._path}/{observable_type}/{name}", params=params
+            f"{self._path}/{quote(observable_type, safe='')}"
+            f"/{quote(name, safe='')}",
+            params=params,
         )
 
-    async def update(
-        self, uuid: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def update(self, uuid: str, data: dict[str, Any]) -> dict[str, Any]:
         return await self._patch(uuid, json=data)
 
     async def delete(self, uuid: str) -> Any:
@@ -161,9 +177,12 @@ class AsyncObservables(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
-            "offset": offset, "limit": limit,
-            "sort": sort, "order": order,
-            "scope": scope, **kwargs,
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "scope": scope,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(uuid, "opinions", params=params)
@@ -182,13 +201,17 @@ class AsyncObservables(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
-            "offset": offset, "limit": limit,
-            "sort": sort, "order": order,
-            "scope": scope, **kwargs,
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "scope": scope,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._http.get(
-            f"{self._path}/{observable_type}/{name}/opinions",
+            f"{self._path}/{quote(observable_type, safe='')}"
+            f"/{quote(name, safe='')}/opinions",
             params=params,
         )
         return _parse_paginated(data)
