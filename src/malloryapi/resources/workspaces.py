@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 from malloryapi._types import PaginatedResponse
 from malloryapi.resources._base import (
@@ -26,8 +27,11 @@ class Workspaces(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -37,9 +41,7 @@ class Workspaces(SyncResource):
     def get(self, uuid: str) -> dict[str, Any]:
         return self._get(uuid)
 
-    def update(
-        self, uuid: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    def update(self, uuid: str, data: dict[str, Any]) -> dict[str, Any]:
         return self._put(uuid, json=data)
 
     def delete(self, uuid: str) -> Any:
@@ -58,27 +60,23 @@ class Workspaces(SyncResource):
     ) -> PaginatedResponse:
         params = {
             "entity_type": entity_type,
-            "sort": sort, "order": order,
-            "offset": offset, "limit": limit,
+            "sort": sort,
+            "order": order,
+            "offset": offset,
+            "limit": limit,
             **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(uuid, "entities", params=params)
         return _parse_paginated(data)
 
-    def add_entities(
-        self, uuid: str, data: dict[str, Any]
-    ) -> Any:
+    def add_entities(self, uuid: str, data: dict[str, Any]) -> Any:
         return self._post(
-            f"{self._path}/{uuid}/add_entities", json=data
+            f"{self._path}/{quote(uuid, safe='')}/add_entities", json=data
         )
 
-    def add_topics(
-        self, uuid: str, data: dict[str, Any]
-    ) -> Any:
-        return self._post(
-            f"{self._path}/{uuid}/add_topics", json=data
-        )
+    def add_topics(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(f"{self._path}/{quote(uuid, safe='')}/add_topics", json=data)
 
 
 class AsyncWorkspaces(AsyncResource):
@@ -95,8 +93,11 @@ class AsyncWorkspaces(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return await self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -106,9 +107,7 @@ class AsyncWorkspaces(AsyncResource):
     async def get(self, uuid: str) -> dict[str, Any]:
         return await self._get(uuid)
 
-    async def update(
-        self, uuid: str, data: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def update(self, uuid: str, data: dict[str, Any]) -> dict[str, Any]:
         return await self._put(uuid, json=data)
 
     async def delete(self, uuid: str) -> Any:
@@ -127,24 +126,22 @@ class AsyncWorkspaces(AsyncResource):
     ) -> PaginatedResponse:
         params = {
             "entity_type": entity_type,
-            "sort": sort, "order": order,
-            "offset": offset, "limit": limit,
+            "sort": sort,
+            "order": order,
+            "offset": offset,
+            "limit": limit,
             **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(uuid, "entities", params=params)
         return _parse_paginated(data)
 
-    async def add_entities(
-        self, uuid: str, data: dict[str, Any]
-    ) -> Any:
+    async def add_entities(self, uuid: str, data: dict[str, Any]) -> Any:
         return await self._post(
-            f"{self._path}/{uuid}/add_entities", json=data
+            f"{self._path}/{quote(uuid, safe='')}/add_entities", json=data
         )
 
-    async def add_topics(
-        self, uuid: str, data: dict[str, Any]
-    ) -> Any:
+    async def add_topics(self, uuid: str, data: dict[str, Any]) -> Any:
         return await self._post(
-            f"{self._path}/{uuid}/add_topics", json=data
+            f"{self._path}/{quote(uuid, safe='')}/add_topics", json=data
         )
