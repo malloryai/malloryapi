@@ -19,7 +19,6 @@ from malloryapi.resources.content_chunks import (
     AsyncContentChunks,
     ContentChunks,
 )
-from malloryapi.resources.dashboards import AsyncDashboards, Dashboards
 from malloryapi.resources.detection_signatures import (
     AsyncDetectionSignatures,
     DetectionSignatures,
@@ -125,7 +124,6 @@ class MalloryApi:
         # Analytics
         self.mentions = Mentions(self._http)
         self.search = Search(self._http)
-        self.dashboards = Dashboards(self._http)
 
         # Platform
         self.industries = Industries(self._http)
@@ -221,7 +219,6 @@ class AsyncMalloryApi:
         # Analytics
         self.mentions = AsyncMentions(self._http)
         self.search = AsyncSearch(self._http)
-        self.dashboards = AsyncDashboards(self._http)
 
         # Platform
         self.industries = AsyncIndustries(self._http)
