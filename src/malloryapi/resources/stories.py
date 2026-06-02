@@ -98,9 +98,10 @@ class Stories(SyncResource):
         return _parse_paginated(data)
 
     def exposure(
-        self, identifier: str, *, offset: int = 0, limit: int = 50
+        self, identifier: str, *, offset: int = 0, limit: int = 50, **kwargs: Any
     ) -> PaginatedResponse:
-        params = {"offset": offset, "limit": limit}
+        params = {"offset": offset, "limit": limit, **kwargs}
+        params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(identifier, "exposure", params=params)
         return _parse_paginated(data)
 
@@ -208,9 +209,10 @@ class AsyncStories(AsyncResource):
         return _parse_paginated(data)
 
     async def exposure(
-        self, identifier: str, *, offset: int = 0, limit: int = 50
+        self, identifier: str, *, offset: int = 0, limit: int = 50, **kwargs: Any
     ) -> PaginatedResponse:
-        params = {"offset": offset, "limit": limit}
+        params = {"offset": offset, "limit": limit, **kwargs}
+        params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(identifier, "exposure", params=params)
         return _parse_paginated(data)
 

@@ -77,6 +77,7 @@ class ThreatActors(SyncResource):
         sort: str | None = None,
         order: str | None = None,
         type: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
@@ -84,6 +85,7 @@ class ThreatActors(SyncResource):
             "sort": sort,
             "order": order,
             "type": type,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(identifier, "source-geographies", params=params)
@@ -98,6 +100,7 @@ class ThreatActors(SyncResource):
         sort: str | None = None,
         order: str | None = None,
         type: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
@@ -105,6 +108,7 @@ class ThreatActors(SyncResource):
             "sort": sort,
             "order": order,
             "type": type,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(identifier, "target-geographies", params=params)
@@ -119,6 +123,7 @@ class ThreatActors(SyncResource):
         sort: str | None = None,
         order: str | None = None,
         type: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
@@ -126,6 +131,7 @@ class ThreatActors(SyncResource):
             "sort": sort,
             "order": order,
             "type": type,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(identifier, "target-industries", params=params)
@@ -214,6 +220,7 @@ class AsyncThreatActors(AsyncResource):
         sort: str | None = None,
         order: str | None = None,
         type: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
@@ -221,6 +228,7 @@ class AsyncThreatActors(AsyncResource):
             "sort": sort,
             "order": order,
             "type": type,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(
@@ -237,6 +245,7 @@ class AsyncThreatActors(AsyncResource):
         sort: str | None = None,
         order: str | None = None,
         type: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
@@ -244,6 +253,7 @@ class AsyncThreatActors(AsyncResource):
             "sort": sort,
             "order": order,
             "type": type,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(
@@ -260,6 +270,7 @@ class AsyncThreatActors(AsyncResource):
         sort: str | None = None,
         order: str | None = None,
         type: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
@@ -267,6 +278,7 @@ class AsyncThreatActors(AsyncResource):
             "sort": sort,
             "order": order,
             "type": type,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(

@@ -18,7 +18,9 @@ class TestGeographies:
         httpx_mock.add_response(json=[{"code": "US"}, {"code": "GB"}])
         result = client.geographies.list()
         request = httpx_mock.get_request()
-        assert "/geographies" in str(request.url)
+        assert request.url.path == "/v1/geographies"
+        assert result.total == 2
+        assert len(result) == 2
         assert result[0]["code"] == "US"
 
     def test_get(self, client, httpx_mock: HTTPXMock):

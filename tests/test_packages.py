@@ -54,3 +54,9 @@ class TestPackages:
         client.packages.mentions("p-1")
         request = httpx_mock.get_request()
         assert "/packages/p-1/mentions" in str(request.url)
+
+    def test_compromises_forwards_extra_kwargs(self, client, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"items": []})
+        client.packages.compromises("p-1", ecosystem="npm")
+        request = httpx_mock.get_request()
+        assert request.url.params["ecosystem"] == "npm"

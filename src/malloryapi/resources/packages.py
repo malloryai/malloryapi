@@ -48,6 +48,7 @@ class Packages(SyncResource):
         limit: int = 50,
         sort: str | None = None,
         order: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "compromise_type": compromise_type,
@@ -55,6 +56,7 @@ class Packages(SyncResource):
             "limit": limit,
             "sort": sort,
             "order": order,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(identifier, "compromises", params=params)
@@ -68,12 +70,14 @@ class Packages(SyncResource):
         limit: int = 50,
         sort: str | None = None,
         order: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
             "limit": limit,
             "sort": sort,
             "order": order,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(identifier, "configurations", params=params)
@@ -88,6 +92,7 @@ class Packages(SyncResource):
         sort: str | None = None,
         order: str | None = None,
         filter: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
@@ -95,6 +100,7 @@ class Packages(SyncResource):
             "sort": sort,
             "order": order,
             "filter": filter,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(identifier, "mentions", params=params)
@@ -137,6 +143,7 @@ class AsyncPackages(AsyncResource):
         limit: int = 50,
         sort: str | None = None,
         order: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "compromise_type": compromise_type,
@@ -144,6 +151,7 @@ class AsyncPackages(AsyncResource):
             "limit": limit,
             "sort": sort,
             "order": order,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(identifier, "compromises", params=params)
@@ -157,12 +165,14 @@ class AsyncPackages(AsyncResource):
         limit: int = 50,
         sort: str | None = None,
         order: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
             "limit": limit,
             "sort": sort,
             "order": order,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(identifier, "configurations", params=params)
@@ -177,6 +187,7 @@ class AsyncPackages(AsyncResource):
         sort: str | None = None,
         order: str | None = None,
         filter: str | None = None,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         params = {
             "offset": offset,
@@ -184,6 +195,7 @@ class AsyncPackages(AsyncResource):
             "sort": sort,
             "order": order,
             "filter": filter,
+            **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
         data = await self._sub(identifier, "mentions", params=params)
