@@ -98,15 +98,34 @@ def _serialize_result(result: Any) -> Any:
     return str(result)
 
 
+# Parameters fed by named flags (e.g. --q, --urls) rather than the
+# positional identifier; methods whose first arg is one of these are
+# dispatched via kwargs, not the positional identifier.
+_FLAG_BACKED_PARAMS = frozenset(
+    {"q", "urls", "types", "limit", "offset", "sort", "order", "filter", "period"}
+)
+
+
 def _needs_identifier(method_name: str, fn: Any) -> bool:
-    """Return True if the method requires an identifier as first arg."""
+    """Return True if the method's first argument is a required positional.
+
+    The CLI passes the positional ``identifier`` arg whenever the method's
+    first parameter is positional, has no default, and isn't already supplied
+    by a named flag. This is name-agnostic so it works regardless of the
+    parameter's name (``identifier``, ``code``, ``tenant_uuid``,
+    ``entity_type``, ``source``, etc.).
+    """
     sig = inspect.signature(fn)
-    params = [p for p in sig.parameters if p != "self"]
+    params = [p for name, p in sig.parameters.items() if name != "self"]
     if not params:
         return False
     first = params[0]
-    # identifier or source (e.g. sources.statistics(source))
-    return first in ("identifier", "source")
+    if first.name in _FLAG_BACKED_PARAMS:
+        return False
+    return (
+        first.kind in (first.POSITIONAL_ONLY, first.POSITIONAL_OR_KEYWORD)
+        and first.default is first.empty
+    )
 
 
 def main() -> int:

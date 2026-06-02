@@ -191,3 +191,54 @@ class TestCliDispatchAndOutput:
         err_data = json.loads(err)
         assert "error" in err_data
         assert err_data.get("status_code") == 404
+
+
+class TestCliIdentifierDispatch:
+    """Methods whose first positional arg isn't named ``identifier`` must
+    still receive the CLI identifier (regression test for geo/tenants/assets).
+    """
+
+    def test_geographies_get_passes_identifier(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"code": "US", "name": "United States"})
+        code, out, err = _run_cli(
+            ["geo", "get", "US"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.url.path == "/v1/geographies/US"
+        assert json.loads(out)["code"] == "US"
+
+    def test_tenants_users_passes_identifier(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(
+            json={"items": [], "total": 0, "offset": 0, "limit": 50}
+        )
+        code, out, err = _run_cli(
+            ["tenants", "users", "tenant-1"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.url.path == "/v1/tenants/tenant-1/users"
+
+    def test_assets_profile_for_passes_identifier(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"count": 3})
+        code, out, err = _run_cli(
+            ["assets", "profile_for", "host"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.url.path == "/v1/assets/profile/host"
+
+    def test_method_without_args_not_treated_as_identifier(
+        self, httpx_mock: HTTPXMock
+    ):
+        httpx_mock.add_response(json=[{"code": "US"}])
+        code, out, err = _run_cli(
+            ["geo", "list"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.url.path == "/v1/geographies"
