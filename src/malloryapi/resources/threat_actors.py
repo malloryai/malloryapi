@@ -9,6 +9,7 @@ from malloryapi.resources._base import (
     AsyncResource,
     SyncResource,
     TrendingPeriod,
+    _parse_paginated,
 )
 
 
@@ -66,6 +67,69 @@ class ThreatActors(SyncResource):
 
     def malware(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "malware", params=kwargs)
+
+    def source_geographies(
+        self,
+        identifier: str,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        sort: str | None = None,
+        order: str | None = None,
+        type: str | None = None,
+    ) -> PaginatedResponse:
+        params = {
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "type": type,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        data = self._sub(identifier, "source-geographies", params=params)
+        return _parse_paginated(data)
+
+    def target_geographies(
+        self,
+        identifier: str,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        sort: str | None = None,
+        order: str | None = None,
+        type: str | None = None,
+    ) -> PaginatedResponse:
+        params = {
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "type": type,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        data = self._sub(identifier, "target-geographies", params=params)
+        return _parse_paginated(data)
+
+    def target_industries(
+        self,
+        identifier: str,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        sort: str | None = None,
+        order: str | None = None,
+        type: str | None = None,
+    ) -> PaginatedResponse:
+        params = {
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "type": type,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        data = self._sub(identifier, "target-industries", params=params)
+        return _parse_paginated(data)
 
     def delete(self, identifier: str) -> Any:
         return self._delete(identifier)
@@ -140,6 +204,75 @@ class AsyncThreatActors(AsyncResource):
         return await self._sub(
             identifier, "malware", params=kwargs
         )
+
+    async def source_geographies(
+        self,
+        identifier: str,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        sort: str | None = None,
+        order: str | None = None,
+        type: str | None = None,
+    ) -> PaginatedResponse:
+        params = {
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "type": type,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        data = await self._sub(
+            identifier, "source-geographies", params=params
+        )
+        return _parse_paginated(data)
+
+    async def target_geographies(
+        self,
+        identifier: str,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        sort: str | None = None,
+        order: str | None = None,
+        type: str | None = None,
+    ) -> PaginatedResponse:
+        params = {
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "type": type,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        data = await self._sub(
+            identifier, "target-geographies", params=params
+        )
+        return _parse_paginated(data)
+
+    async def target_industries(
+        self,
+        identifier: str,
+        *,
+        offset: int = 0,
+        limit: int = 50,
+        sort: str | None = None,
+        order: str | None = None,
+        type: str | None = None,
+    ) -> PaginatedResponse:
+        params = {
+            "offset": offset,
+            "limit": limit,
+            "sort": sort,
+            "order": order,
+            "type": type,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        data = await self._sub(
+            identifier, "target-industries", params=params
+        )
+        return _parse_paginated(data)
 
     async def delete(self, identifier: str) -> Any:
         return await self._delete(identifier)

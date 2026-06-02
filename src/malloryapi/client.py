@@ -10,6 +10,7 @@ from malloryapi._http import (
     AsyncHttpClient,
     SyncHttpClient,
 )
+from malloryapi.resources.assets import Assets, AsyncAssets
 from malloryapi.resources.attack_patterns import (
     AsyncAttackPatterns,
     AttackPatterns,
@@ -30,6 +31,10 @@ from malloryapi.resources.exploitations import (
 )
 from malloryapi.resources.exploits import AsyncExploits, Exploits
 from malloryapi.resources.exports import AsyncExports, Exports
+from malloryapi.resources.geographies import (
+    AsyncGeographies,
+    Geographies,
+)
 from malloryapi.resources.industries import AsyncIndustries, Industries
 from malloryapi.resources.integrations import (
     AsyncIntegrations,
@@ -43,6 +48,7 @@ from malloryapi.resources.organizations import (
     AsyncOrganizations,
     Organizations,
 )
+from malloryapi.resources.packages import AsyncPackages, Packages
 from malloryapi.resources.products import AsyncProducts, Products
 from malloryapi.resources.references import (
     AsyncReferences,
@@ -56,6 +62,7 @@ from malloryapi.resources.technology_product_advisories import (
     AsyncTechnologyProductAdvisories,
     TechnologyProductAdvisories,
 )
+from malloryapi.resources.tenants import AsyncTenants, Tenants
 from malloryapi.resources.threat_actors import (
     AsyncThreatActors,
     ThreatActors,
@@ -65,13 +72,13 @@ from malloryapi.resources.vulnerabilities import (
     AsyncVulnerabilities,
     Vulnerabilities,
 )
-from malloryapi.resources.weaknesses import (
-    AsyncWeaknesses,
-    Weaknesses,
-)
 from malloryapi.resources.vulnerable_configurations import (
     AsyncVulnerableConfigurations,
     VulnerableConfigurations,
+)
+from malloryapi.resources.weaknesses import (
+    AsyncWeaknesses,
+    Weaknesses,
 )
 from malloryapi.resources.workspaces import AsyncWorkspaces, Workspaces
 
@@ -94,9 +101,7 @@ class MalloryApi:
         base_url: str = DEFAULT_BASE_URL,
         timeout: float = DEFAULT_TIMEOUT,
     ) -> None:
-        self._http = SyncHttpClient(
-            api_key=api_key, base_url=base_url, timeout=timeout
-        )
+        self._http = SyncHttpClient(api_key=api_key, base_url=base_url, timeout=timeout)
 
         # Entities
         self.vulnerabilities = Vulnerabilities(self._http)
@@ -133,9 +138,11 @@ class MalloryApi:
         self.workspaces = Workspaces(self._http)
         self.exports = Exports(self._http)
         self.integrations = Integrations(self._http)
-        self.vulnerable_configurations = VulnerableConfigurations(
-            self._http
-        )
+        self.vulnerable_configurations = VulnerableConfigurations(self._http)
+        self.assets = Assets(self._http)
+        self.packages = Packages(self._http)
+        self.geographies = Geographies(self._http)
+        self.tenants = Tenants(self._http)
 
         # Account
         self.user = User(self._http)
@@ -200,12 +207,8 @@ class AsyncMalloryApi:
         self.products = AsyncProducts(self._http)
         self.attack_patterns = AsyncAttackPatterns(self._http)
         self.breaches = AsyncBreaches(self._http)
-        self.detection_signatures = AsyncDetectionSignatures(
-            self._http
-        )
-        self.advisories = AsyncTechnologyProductAdvisories(
-            self._http
-        )
+        self.detection_signatures = AsyncDetectionSignatures(self._http)
+        self.advisories = AsyncTechnologyProductAdvisories(self._http)
         self.weaknesses = AsyncWeaknesses(self._http)
 
         # Content
@@ -229,9 +232,11 @@ class AsyncMalloryApi:
         self.workspaces = AsyncWorkspaces(self._http)
         self.exports = AsyncExports(self._http)
         self.integrations = AsyncIntegrations(self._http)
-        self.vulnerable_configurations = (
-            AsyncVulnerableConfigurations(self._http)
-        )
+        self.vulnerable_configurations = AsyncVulnerableConfigurations(self._http)
+        self.assets = AsyncAssets(self._http)
+        self.packages = AsyncPackages(self._http)
+        self.geographies = AsyncGeographies(self._http)
+        self.tenants = AsyncTenants(self._http)
 
         # Account
         self.user = AsyncUser(self._http)

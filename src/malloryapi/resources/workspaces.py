@@ -78,6 +78,61 @@ class Workspaces(SyncResource):
     def add_topics(self, uuid: str, data: dict[str, Any]) -> Any:
         return self._post(f"{self._path}/{quote(uuid, safe='')}/add_topics", json=data)
 
+    def add_sources(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(
+            f"{self._path}/{quote(uuid, safe='')}/add_sources", json=data
+        )
+
+    def members(self, uuid: str) -> Any:
+        return self._sub(uuid, "members")
+
+    def add_member(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(
+            f"{self._path}/{quote(uuid, safe='')}/members", json=data
+        )
+
+    def update_member(
+        self, uuid: str, user_uuid: str, data: dict[str, Any]
+    ) -> Any:
+        return self._http.patch(
+            f"{self._path}/{quote(uuid, safe='')}/members/"
+            f"{quote(user_uuid, safe='')}",
+            json=data,
+        )
+
+    def remove_member(self, uuid: str, user_uuid: str) -> Any:
+        return self._http.delete(
+            f"{self._path}/{quote(uuid, safe='')}/members/"
+            f"{quote(user_uuid, safe='')}"
+        )
+
+    def sources(
+        self, uuid: str, *, offset: int = 0, limit: int = 50
+    ) -> PaginatedResponse:
+        params = {"offset": offset, "limit": limit}
+        data = self._sub(uuid, "sources", params=params)
+        return _parse_paginated(data)
+
+    def remove_source(self, uuid: str, source_uuid: str) -> Any:
+        return self._http.delete(
+            f"{self._path}/{quote(uuid, safe='')}/sources/"
+            f"{quote(source_uuid, safe='')}"
+        )
+
+    def remove_entity(
+        self, uuid: str, entity_type: str, entity_uuid: str
+    ) -> Any:
+        return self._http.delete(
+            f"{self._path}/{quote(uuid, safe='')}/entities/"
+            f"{quote(entity_type, safe='')}/{quote(entity_uuid, safe='')}"
+        )
+
+    def remove_topic(self, uuid: str, topic: str) -> Any:
+        return self._http.delete(
+            f"{self._path}/{quote(uuid, safe='')}/topics/"
+            f"{quote(topic, safe='')}"
+        )
+
 
 class AsyncWorkspaces(AsyncResource):
     _path = "/workspaces"
@@ -144,4 +199,59 @@ class AsyncWorkspaces(AsyncResource):
     async def add_topics(self, uuid: str, data: dict[str, Any]) -> Any:
         return await self._post(
             f"{self._path}/{quote(uuid, safe='')}/add_topics", json=data
+        )
+
+    async def add_sources(self, uuid: str, data: dict[str, Any]) -> Any:
+        return await self._post(
+            f"{self._path}/{quote(uuid, safe='')}/add_sources", json=data
+        )
+
+    async def members(self, uuid: str) -> Any:
+        return await self._sub(uuid, "members")
+
+    async def add_member(self, uuid: str, data: dict[str, Any]) -> Any:
+        return await self._post(
+            f"{self._path}/{quote(uuid, safe='')}/members", json=data
+        )
+
+    async def update_member(
+        self, uuid: str, user_uuid: str, data: dict[str, Any]
+    ) -> Any:
+        return await self._http.patch(
+            f"{self._path}/{quote(uuid, safe='')}/members/"
+            f"{quote(user_uuid, safe='')}",
+            json=data,
+        )
+
+    async def remove_member(self, uuid: str, user_uuid: str) -> Any:
+        return await self._http.delete(
+            f"{self._path}/{quote(uuid, safe='')}/members/"
+            f"{quote(user_uuid, safe='')}"
+        )
+
+    async def sources(
+        self, uuid: str, *, offset: int = 0, limit: int = 50
+    ) -> PaginatedResponse:
+        params = {"offset": offset, "limit": limit}
+        data = await self._sub(uuid, "sources", params=params)
+        return _parse_paginated(data)
+
+    async def remove_source(self, uuid: str, source_uuid: str) -> Any:
+        return await self._http.delete(
+            f"{self._path}/{quote(uuid, safe='')}/sources/"
+            f"{quote(source_uuid, safe='')}"
+        )
+
+    async def remove_entity(
+        self, uuid: str, entity_type: str, entity_uuid: str
+    ) -> Any:
+        return await self._http.delete(
+            f"{self._path}/{quote(uuid, safe='')}/entities/"
+            f"{quote(entity_type, safe='')}/{quote(entity_uuid, safe='')}"
+        )
+
+    async def remove_topic(self, uuid: str, topic: str) -> Any:
+        return await self._http.delete(
+            f"{self._path}/{quote(uuid, safe='')}/topics/"
+            f"{quote(topic, safe='')}"
         )

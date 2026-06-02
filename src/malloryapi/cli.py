@@ -6,6 +6,7 @@ Enables agents and users to call the API via shell:
     malloryapi threat_actors trending --period 7d --limit 10
     malloryapi search query --q "APT28"
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,6 +23,8 @@ RESOURCE_ALIASES: dict[str, str] = {
     "chunks": "content_chunks",
     "sigs": "detection_signatures",
     "aps": "attack_patterns",
+    "pkgs": "packages",
+    "geo": "geographies",
 }
 
 # All MalloryApi resource attributes (sync client)
@@ -42,8 +45,22 @@ RESOURCE_NAMES = [
     "references",
     "sources",
     "content_chunks",
+    "observables",
+    "opinions",
     "mentions",
     "search",
+    "dashboards",
+    "industries",
+    "schedules",
+    "workspaces",
+    "exports",
+    "integrations",
+    "vulnerable_configurations",
+    "assets",
+    "packages",
+    "geographies",
+    "tenants",
+    "user",
 ]
 
 
@@ -55,11 +72,7 @@ def _resolve_resource_name(name: str) -> str:
 
 def _get_public_methods(obj: Any) -> list[str]:
     """Return public method names of obj (no _ prefix)."""
-    return [
-        m
-        for m in dir(obj)
-        if not m.startswith("_") and callable(getattr(obj, m))
-    ]
+    return [m for m in dir(obj) if not m.startswith("_") and callable(getattr(obj, m))]
 
 
 def _write_error(msg: str, status_code: int | None = None) -> None:
@@ -100,9 +113,7 @@ def main() -> int:
     try:
         from malloryapi import MalloryApi  # noqa: E402
     except ImportError:
-        _write_error(
-            "malloryapi is not installed. Run: pip install malloryapi"
-        )
+        _write_error("malloryapi is not installed. Run: pip install malloryapi")
         return 1
 
     parser = argparse.ArgumentParser(
@@ -185,8 +196,7 @@ def main() -> int:
             if res is not None:
                 out[attr] = _get_public_methods(res)
         aliases = [
-            f"  {alias} -> {full}"
-            for alias, full in sorted(RESOURCE_ALIASES.items())
+            f"  {alias} -> {full}" for alias, full in sorted(RESOURCE_ALIASES.items())
         ]
         sys.stdout.write(
             json.dumps(
@@ -270,9 +280,7 @@ def main() -> int:
     try:
         if _needs_identifier(args.method, method_fn):
             if not args.identifier:
-                _write_error(
-                    f"Method '{args.method}' requires an identifier"
-                )
+                _write_error(f"Method '{args.method}' requires an identifier")
                 return 1
             result = method_fn(args.identifier, **kwargs)
         else:

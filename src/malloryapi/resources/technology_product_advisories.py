@@ -28,6 +28,9 @@ class TechnologyProductAdvisories(SyncResource):
     def get(self, identifier: str) -> dict[str, Any]:
         return self._get(identifier)
 
+    def sources(self) -> Any:
+        return self._http.get(f"{self._path}/sources")
+
     def export(self, identifier: str) -> dict[str, Any]:
         return self._sub(identifier, "export")
 
@@ -61,6 +64,9 @@ class AsyncTechnologyProductAdvisories(AsyncResource):
 
     async def get(self, identifier: str) -> dict[str, Any]:
         return await self._get(identifier)
+
+    async def sources(self) -> Any:
+        return await self._http.get(f"{self._path}/sources")
 
     async def export(self, identifier: str) -> dict[str, Any]:
         return await self._sub(identifier, "export")
