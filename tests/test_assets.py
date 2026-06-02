@@ -26,7 +26,8 @@ class TestAssets:
         httpx_mock.add_response(json=LIST_RESPONSE)
         result = client.assets.inventory_hosts(limit=10)
         request = httpx_mock.get_request()
-        assert "/assets/inventory/hosts" in str(request.url)
+        assert request.url.path == "/v1/assets/inventory/hosts"
+        assert request.url.params["limit"] == "10"
         assert len(result) == 2
         assert result.total == 2
 
@@ -70,7 +71,8 @@ class TestAssets:
         httpx_mock.add_response(json=LIST_RESPONSE)
         client.assets.uploads(status="complete")
         request = httpx_mock.get_request()
-        assert "/assets/uploads" in str(request.url)
+        assert request.url.path == "/v1/assets/uploads"
+        assert request.url.params["status"] == "complete"
 
     def test_upload_status(self, client, httpx_mock: HTTPXMock):
         httpx_mock.add_response(json={"status": "complete"})
