@@ -242,3 +242,71 @@ class TestCliIdentifierDispatch:
         assert code == 0, err
         request = httpx_mock.get_request()
         assert request.url.path == "/v1/geographies"
+
+
+class TestCliMultiPositionalDispatch:
+    """Methods requiring more than one positional arg (workspace mutators)
+    must bind every positional, not just the first (regression for the
+    single-``identifier`` dispatch that raised TypeError).
+    """
+
+    def test_remove_member_binds_two_positionals(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        code, out, err = _run_cli(
+            ["workspaces", "remove_member", "ws-1", "user-1"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.method == "DELETE"
+        assert request.url.path == "/v1/workspaces/ws-1/members/user-1"
+
+    def test_remove_entity_binds_three_positionals(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        code, out, err = _run_cli(
+            ["workspaces", "remove_entity", "ws-1", "actor", "ent-1"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.method == "DELETE"
+        assert request.url.path == "/v1/workspaces/ws-1/entities/actor/ent-1"
+
+    def test_add_member_json_body_decoded(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        code, out, err = _run_cli(
+            [
+                "workspaces",
+                "add_member",
+                "ws-1",
+                '{"user_uuid": "u-1", "role": "admin"}',
+            ],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.method == "POST"
+        assert request.url.path == "/v1/workspaces/ws-1/members"
+        assert json.loads(request.content) == {
+            "user_uuid": "u-1",
+            "role": "admin",
+        }
+
+    def test_missing_second_positional_errors(self):
+        code, out, err = _run_cli(
+            ["workspaces", "remove_member", "ws-1"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 1
+        err_data = json.loads(err)
+        assert "positional argument(s)" in err_data["error"]
+        assert "user_uuid" in err_data["error"]
+
+    def test_invalid_json_body_errors(self):
+        code, out, err = _run_cli(
+            ["workspaces", "add_member", "ws-1", "not-json"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 1
+        err_data = json.loads(err)
+        assert "must be valid JSON" in err_data["error"]

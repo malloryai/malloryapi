@@ -106,26 +106,23 @@ _FLAG_BACKED_PARAMS = frozenset(
 )
 
 
-def _needs_identifier(method_name: str, fn: Any) -> bool:
-    """Return True if the method's first argument is a required positional.
+def _positional_params(fn: Any, supplied: set[str]) -> list[inspect.Parameter]:
+    """Return the positional parameters the CLI must bind for ``fn``.
 
-    The CLI passes the positional ``identifier`` arg whenever the method's
-    first parameter is positional, has no default, and isn't already supplied
-    by a named flag. This is name-agnostic so it works regardless of the
-    parameter's name (``identifier``, ``code``, ``tenant_uuid``,
-    ``entity_type``, ``source``, etc.).
+    Skips ``self``, parameters fed by named flags, and any parameter already
+    supplied via kwargs. Both required and optional positionals are returned,
+    in declaration order, so the dispatcher can bind CLI positionals to methods
+    that take more than one (e.g. ``update_member(uuid, user_uuid, data)``).
+    This is name-agnostic so it works regardless of the parameter's name
+    (``identifier``, ``code``, ``tenant_uuid``, ``entity_type``, etc.).
     """
-    sig = inspect.signature(fn)
-    params = [p for name, p in sig.parameters.items() if name != "self"]
-    if not params:
-        return False
-    first = params[0]
-    if first.name in _FLAG_BACKED_PARAMS:
-        return False
-    return (
-        first.kind in (first.POSITIONAL_ONLY, first.POSITIONAL_OR_KEYWORD)
-        and first.default is first.empty
-    )
+    params: list[inspect.Parameter] = []
+    for name, p in inspect.signature(fn).parameters.items():
+        if name == "self" or name in _FLAG_BACKED_PARAMS or name in supplied:
+            continue
+        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD):
+            params.append(p)
+    return params
 
 
 def main() -> int:
@@ -186,9 +183,13 @@ def main() -> int:
     )
     parser.add_argument(
         "identifier",
-        nargs="?",
-        default=None,
-        help="Identifier (CVE ID, UUID) for get/export/sub-resource methods",
+        nargs="*",
+        default=[],
+        help=(
+            "Positional argument(s) for the method: an identifier (CVE ID, "
+            "UUID), plus any further positionals such as user UUID, entity "
+            "type, or a JSON body for create/add/update methods"
+        ),
     )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--offset", type=int, default=None)
@@ -296,20 +297,47 @@ def main() -> int:
             urls.extend(s.strip() for s in u.split(",") if s.strip())
         kwargs["urls"] = urls
 
-    try:
-        if _needs_identifier(args.method, method_fn):
-            if not args.identifier:
-                _write_error(f"Method '{args.method}' requires an identifier")
-                return 1
-            result = method_fn(args.identifier, **kwargs)
+    pos_params = _positional_params(method_fn, set(kwargs))
+    required = [p for p in pos_params if p.default is p.empty]
+    provided = list(args.identifier)
+
+    if len(provided) < len(required):
+        if len(required) == 1:
+            _write_error(f"Method '{args.method}' requires an identifier")
         else:
-            if args.method == "query" and "q" not in kwargs:
-                _write_error("Search query requires --q")
+            names = ", ".join(p.name for p in required)
+            _write_error(
+                f"Method '{args.method}' requires {len(required)} "
+                f"positional argument(s): {names}"
+            )
+        return 1
+
+    if not required:
+        if args.method == "query" and "q" not in kwargs:
+            _write_error("Search query requires --q")
+            return 1
+        if args.method == "create" and "urls" not in kwargs:
+            _write_error("references create requires --urls")
+            return 1
+
+    # Bind CLI positionals to the method's positional params in order,
+    # JSON-decoding any value destined for a ``data`` body parameter.
+    bound: list[Any] = []
+    for param, raw in zip(pos_params, provided):
+        if param.name == "data":
+            try:
+                bound.append(json.loads(raw))
+            except json.JSONDecodeError:
+                _write_error(
+                    f"Argument '{param.name}' for '{args.method}' "
+                    f"must be valid JSON"
+                )
                 return 1
-            if args.method == "create" and "urls" not in kwargs:
-                _write_error("references create requires --urls")
-                return 1
-            result = method_fn(**kwargs)
+        else:
+            bound.append(raw)
+
+    try:
+        result = method_fn(*bound, **kwargs)
     except Exception as exc:
         from malloryapi.exceptions import APIError  # noqa: E402
 
