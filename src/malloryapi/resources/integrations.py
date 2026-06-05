@@ -9,7 +9,6 @@ from malloryapi._types import PaginatedResponse
 from malloryapi.resources._base import (
     AsyncResource,
     SyncResource,
-    _parse_paginated,
 )
 
 

@@ -64,13 +64,13 @@ from malloryapi.resources.vulnerabilities import (
     AsyncVulnerabilities,
     Vulnerabilities,
 )
-from malloryapi.resources.weaknesses import (
-    AsyncWeaknesses,
-    Weaknesses,
-)
 from malloryapi.resources.vulnerable_configurations import (
     AsyncVulnerableConfigurations,
     VulnerableConfigurations,
+)
+from malloryapi.resources.weaknesses import (
+    AsyncWeaknesses,
+    Weaknesses,
 )
 from malloryapi.resources.workspaces import AsyncWorkspaces, Workspaces
 
