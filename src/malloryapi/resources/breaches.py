@@ -28,6 +28,20 @@ class Breaches(SyncResource):
     def get(self, identifier: str) -> dict[str, Any]:
         return self._get(identifier)
 
+    def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+    ) -> dict[str, Any]:
+        params = {
+            "relationships_created_after": relationships_created_after,
+            "relationships_created_before": relationships_created_before,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        return self._sub(identifier, "export", params=params)
+
     def organizations(
         self, identifier: str, **kwargs: Any
     ) -> Any:
@@ -78,6 +92,20 @@ class AsyncBreaches(AsyncResource):
 
     async def get(self, identifier: str) -> dict[str, Any]:
         return await self._get(identifier)
+
+    async def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+    ) -> dict[str, Any]:
+        params = {
+            "relationships_created_after": relationships_created_after,
+            "relationships_created_before": relationships_created_before,
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        return await self._sub(identifier, "export", params=params)
 
     async def organizations(
         self, identifier: str, **kwargs: Any

@@ -34,6 +34,9 @@ class Stories(SyncResource):
     def topics(self) -> list[dict[str, Any]]:
         return self._http.get(f"{self._path}/topics")
 
+    def topics_taxonomy(self) -> Any:
+        return self._http.get(f"{self._path}/topics/taxonomy")
+
     def get(self, identifier: str) -> dict[str, Any]:
         return self._get(identifier)
 
@@ -94,6 +97,14 @@ class Stories(SyncResource):
         data = self._sub(identifier, "timeline", params=kwargs)
         return _parse_paginated(data)
 
+    def exposure(
+        self, identifier: str, *, offset: int = 0, limit: int = 50, **kwargs: Any
+    ) -> PaginatedResponse:
+        params = {"offset": offset, "limit": limit, **kwargs}
+        params = {k: v for k, v in params.items() if v is not None}
+        data = self._sub(identifier, "exposure", params=params)
+        return _parse_paginated(data)
+
     def delete(self, identifier: str) -> Any:
         return self._delete(identifier)
 
@@ -119,6 +130,9 @@ class AsyncStories(AsyncResource):
 
     async def topics(self) -> list[dict[str, Any]]:
         return await self._http.get(f"{self._path}/topics")
+
+    async def topics_taxonomy(self) -> Any:
+        return await self._http.get(f"{self._path}/topics/taxonomy")
 
     async def get(self, identifier: str) -> dict[str, Any]:
         return await self._get(identifier)
@@ -192,6 +206,14 @@ class AsyncStories(AsyncResource):
         data = await self._sub(
             identifier, "timeline", params=kwargs
         )
+        return _parse_paginated(data)
+
+    async def exposure(
+        self, identifier: str, *, offset: int = 0, limit: int = 50, **kwargs: Any
+    ) -> PaginatedResponse:
+        params = {"offset": offset, "limit": limit, **kwargs}
+        params = {k: v for k, v in params.items() if v is not None}
+        data = await self._sub(identifier, "exposure", params=params)
         return _parse_paginated(data)
 
     async def delete(self, identifier: str) -> Any:

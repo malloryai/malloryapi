@@ -6,6 +6,7 @@ Enables agents and users to call the API via shell:
     malloryapi threat_actors trending --period 7d --limit 10
     malloryapi search query --q "APT28"
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,6 +23,8 @@ RESOURCE_ALIASES: dict[str, str] = {
     "chunks": "content_chunks",
     "sigs": "detection_signatures",
     "aps": "attack_patterns",
+    "pkgs": "packages",
+    "geo": "geographies",
 }
 
 # All MalloryApi resource attributes (sync client)
@@ -42,8 +45,22 @@ RESOURCE_NAMES = [
     "references",
     "sources",
     "content_chunks",
+    "observables",
+    "opinions",
     "mentions",
     "search",
+    "dashboards",
+    "industries",
+    "schedules",
+    "workspaces",
+    "exports",
+    "integrations",
+    "vulnerable_configurations",
+    "assets",
+    "packages",
+    "geographies",
+    "tenants",
+    "user",
 ]
 
 
@@ -55,11 +72,7 @@ def _resolve_resource_name(name: str) -> str:
 
 def _get_public_methods(obj: Any) -> list[str]:
     """Return public method names of obj (no _ prefix)."""
-    return [
-        m
-        for m in dir(obj)
-        if not m.startswith("_") and callable(getattr(obj, m))
-    ]
+    return [m for m in dir(obj) if not m.startswith("_") and callable(getattr(obj, m))]
 
 
 def _write_error(msg: str, status_code: int | None = None) -> None:
@@ -85,24 +98,38 @@ def _serialize_result(result: Any) -> Any:
     return str(result)
 
 
-def _needs_identifier(method_name: str, fn: Any) -> bool:
-    """Return True if the method requires an identifier as first arg."""
-    sig = inspect.signature(fn)
-    params = [p for p in sig.parameters if p != "self"]
-    if not params:
-        return False
-    first = params[0]
-    # identifier or source (e.g. sources.statistics(source))
-    return first in ("identifier", "source")
+# Parameters fed by named flags (e.g. --q, --urls) rather than the
+# positional identifier; methods whose first arg is one of these are
+# dispatched via kwargs, not the positional identifier.
+_FLAG_BACKED_PARAMS = frozenset(
+    {"q", "urls", "types", "limit", "offset", "sort", "order", "filter", "period"}
+)
+
+
+def _positional_params(fn: Any, supplied: set[str]) -> list[inspect.Parameter]:
+    """Return the positional parameters the CLI must bind for ``fn``.
+
+    Skips ``self``, parameters fed by named flags, and any parameter already
+    supplied via kwargs. Both required and optional positionals are returned,
+    in declaration order, so the dispatcher can bind CLI positionals to methods
+    that take more than one (e.g. ``update_member(uuid, user_uuid, data)``).
+    This is name-agnostic so it works regardless of the parameter's name
+    (``identifier``, ``code``, ``tenant_uuid``, ``entity_type``, etc.).
+    """
+    params: list[inspect.Parameter] = []
+    for name, p in inspect.signature(fn).parameters.items():
+        if name == "self" or name in _FLAG_BACKED_PARAMS or name in supplied:
+            continue
+        if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD):
+            params.append(p)
+    return params
 
 
 def main() -> int:
     try:
         from malloryapi import MalloryApi  # noqa: E402
     except ImportError:
-        _write_error(
-            "malloryapi is not installed. Run: pip install malloryapi"
-        )
+        _write_error("malloryapi is not installed. Run: pip install malloryapi")
         return 1
 
     parser = argparse.ArgumentParser(
@@ -156,9 +183,13 @@ def main() -> int:
     )
     parser.add_argument(
         "identifier",
-        nargs="?",
-        default=None,
-        help="Identifier (CVE ID, UUID) for get/export/sub-resource methods",
+        nargs="*",
+        default=[],
+        help=(
+            "Positional argument(s) for the method: an identifier (CVE ID, "
+            "UUID), plus any further positionals such as user UUID, entity "
+            "type, or a JSON body for create/add/update methods"
+        ),
     )
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--offset", type=int, default=None)
@@ -185,8 +216,7 @@ def main() -> int:
             if res is not None:
                 out[attr] = _get_public_methods(res)
         aliases = [
-            f"  {alias} -> {full}"
-            for alias, full in sorted(RESOURCE_ALIASES.items())
+            f"  {alias} -> {full}" for alias, full in sorted(RESOURCE_ALIASES.items())
         ]
         sys.stdout.write(
             json.dumps(
@@ -267,22 +297,47 @@ def main() -> int:
             urls.extend(s.strip() for s in u.split(",") if s.strip())
         kwargs["urls"] = urls
 
-    try:
-        if _needs_identifier(args.method, method_fn):
-            if not args.identifier:
+    pos_params = _positional_params(method_fn, set(kwargs))
+    required = [p for p in pos_params if p.default is p.empty]
+    provided = list(args.identifier)
+
+    if len(provided) < len(required):
+        if len(required) == 1:
+            _write_error(f"Method '{args.method}' requires an identifier")
+        else:
+            names = ", ".join(p.name for p in required)
+            _write_error(
+                f"Method '{args.method}' requires {len(required)} "
+                f"positional argument(s): {names}"
+            )
+        return 1
+
+    if not required:
+        if args.method == "query" and "q" not in kwargs:
+            _write_error("Search query requires --q")
+            return 1
+        if args.method == "create" and "urls" not in kwargs:
+            _write_error("references create requires --urls")
+            return 1
+
+    # Bind CLI positionals to the method's positional params in order,
+    # JSON-decoding any value destined for a ``data`` body parameter.
+    bound: list[Any] = []
+    for param, raw in zip(pos_params, provided):
+        if param.name == "data":
+            try:
+                bound.append(json.loads(raw))
+            except json.JSONDecodeError:
                 _write_error(
-                    f"Method '{args.method}' requires an identifier"
+                    f"Argument '{param.name}' for '{args.method}' "
+                    f"must be valid JSON"
                 )
                 return 1
-            result = method_fn(args.identifier, **kwargs)
         else:
-            if args.method == "query" and "q" not in kwargs:
-                _write_error("Search query requires --q")
-                return 1
-            if args.method == "create" and "urls" not in kwargs:
-                _write_error("references create requires --urls")
-                return 1
-            result = method_fn(**kwargs)
+            bound.append(raw)
+
+    try:
+        result = method_fn(*bound, **kwargs)
     except Exception as exc:
         from malloryapi.exceptions import APIError  # noqa: E402
 

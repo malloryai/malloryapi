@@ -191,3 +191,122 @@ class TestCliDispatchAndOutput:
         err_data = json.loads(err)
         assert "error" in err_data
         assert err_data.get("status_code") == 404
+
+
+class TestCliIdentifierDispatch:
+    """Methods whose first positional arg isn't named ``identifier`` must
+    still receive the CLI identifier (regression test for geo/tenants/assets).
+    """
+
+    def test_geographies_get_passes_identifier(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"code": "US", "name": "United States"})
+        code, out, err = _run_cli(
+            ["geo", "get", "US"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.url.path == "/v1/geographies/US"
+        assert json.loads(out)["code"] == "US"
+
+    def test_tenants_users_passes_identifier(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(
+            json={"items": [], "total": 0, "offset": 0, "limit": 50}
+        )
+        code, out, err = _run_cli(
+            ["tenants", "users", "tenant-1"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.url.path == "/v1/tenants/tenant-1/users"
+
+    def test_assets_profile_for_passes_identifier(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"count": 3})
+        code, out, err = _run_cli(
+            ["assets", "profile_for", "host"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.url.path == "/v1/assets/profile/host"
+
+    def test_method_without_args_not_treated_as_identifier(
+        self, httpx_mock: HTTPXMock
+    ):
+        httpx_mock.add_response(json=[{"code": "US"}])
+        code, out, err = _run_cli(
+            ["geo", "list"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.url.path == "/v1/geographies"
+
+
+class TestCliMultiPositionalDispatch:
+    """Methods requiring more than one positional arg (workspace mutators)
+    must bind every positional, not just the first (regression for the
+    single-``identifier`` dispatch that raised TypeError).
+    """
+
+    def test_remove_member_binds_two_positionals(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        code, out, err = _run_cli(
+            ["workspaces", "remove_member", "ws-1", "user-1"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.method == "DELETE"
+        assert request.url.path == "/v1/workspaces/ws-1/members/user-1"
+
+    def test_remove_entity_binds_three_positionals(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        code, out, err = _run_cli(
+            ["workspaces", "remove_entity", "ws-1", "actor", "ent-1"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.method == "DELETE"
+        assert request.url.path == "/v1/workspaces/ws-1/entities/actor/ent-1"
+
+    def test_add_member_json_body_decoded(self, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        code, out, err = _run_cli(
+            [
+                "workspaces",
+                "add_member",
+                "ws-1",
+                '{"user_uuid": "u-1", "role": "admin"}',
+            ],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 0, err
+        request = httpx_mock.get_request()
+        assert request.method == "POST"
+        assert request.url.path == "/v1/workspaces/ws-1/members"
+        assert json.loads(request.content) == {
+            "user_uuid": "u-1",
+            "role": "admin",
+        }
+
+    def test_missing_second_positional_errors(self):
+        code, out, err = _run_cli(
+            ["workspaces", "remove_member", "ws-1"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 1
+        err_data = json.loads(err)
+        assert "positional argument(s)" in err_data["error"]
+        assert "user_uuid" in err_data["error"]
+
+    def test_invalid_json_body_errors(self):
+        code, out, err = _run_cli(
+            ["workspaces", "add_member", "ws-1", "not-json"],
+            env={"MALLORY_API_KEY": TEST_API_KEY},
+        )
+        assert code == 1
+        err_data = json.loads(err)
+        assert "must be valid JSON" in err_data["error"]
