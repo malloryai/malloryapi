@@ -145,6 +145,24 @@ class ThreatActors(SyncResource):
             f"{self._path}/{identifier}/enrich"
         )
 
+    def attack_patterns_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "attack_patterns/overview", params=kwargs)
+
+    def exploitations_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "exploitations/overview", params=kwargs)
+
+    def malware_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "malware/overview", params=kwargs)
+
+    def source_geographies_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "source-geographies/overview", params=kwargs)
+
+    def target_geographies_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "target-geographies/overview", params=kwargs)
+
+    def target_industries_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "target-industries/overview", params=kwargs)
+
 
 class AsyncThreatActors(AsyncResource):
     _path = "/actors"
@@ -292,4 +310,46 @@ class AsyncThreatActors(AsyncResource):
     async def enrich(self, identifier: str) -> dict[str, Any]:
         return await self._http.post(
             f"{self._path}/{identifier}/enrich"
+        )
+
+    async def attack_patterns_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "attack_patterns/overview", params=kwargs
+        )
+
+    async def exploitations_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "exploitations/overview", params=kwargs
+        )
+
+    async def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware/overview", params=kwargs
+        )
+
+    async def source_geographies_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "source-geographies/overview", params=kwargs
+        )
+
+    async def target_geographies_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "target-geographies/overview", params=kwargs
+        )
+
+    async def target_industries_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "target-industries/overview", params=kwargs
         )

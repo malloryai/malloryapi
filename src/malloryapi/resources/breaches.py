@@ -72,6 +72,15 @@ class Breaches(SyncResource):
     def delete(self, identifier: str) -> Any:
         return self._delete(identifier)
 
+    def attack_patterns_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "attack-patterns/overview", params=kwargs)
+
+    def malware_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "malware/overview", params=kwargs)
+
+    def threat_actors_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "threat-actors/overview", params=kwargs)
+
 
 class AsyncBreaches(AsyncResource):
     _path = "/breaches"
@@ -144,3 +153,24 @@ class AsyncBreaches(AsyncResource):
 
     async def delete(self, identifier: str) -> Any:
         return await self._delete(identifier)
+
+    async def attack_patterns_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "attack-patterns/overview", params=kwargs
+        )
+
+    async def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware/overview", params=kwargs
+        )
+
+    async def threat_actors_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "threat-actors/overview", params=kwargs
+        )

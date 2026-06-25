@@ -134,6 +134,21 @@ class Workspaces(SyncResource):
             f"{quote(topic, safe='')}"
         )
 
+    def remove_entities(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_entities", json=data
+        )
+
+    def remove_sources(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_sources", json=data
+        )
+
+    def remove_topics(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_topics", json=data
+        )
+
 
 class AsyncWorkspaces(AsyncResource):
     _path = "/workspaces"
@@ -256,4 +271,19 @@ class AsyncWorkspaces(AsyncResource):
         return await self._http.delete(
             f"{self._path}/{quote(uuid, safe='')}/topics/"
             f"{quote(topic, safe='')}"
+        )
+
+    async def remove_entities(self, uuid: str, data: dict[str, Any]) -> Any:
+        return await self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_entities", json=data
+        )
+
+    async def remove_sources(self, uuid: str, data: dict[str, Any]) -> Any:
+        return await self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_sources", json=data
+        )
+
+    async def remove_topics(self, uuid: str, data: dict[str, Any]) -> Any:
+        return await self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_topics", json=data
         )

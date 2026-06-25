@@ -52,6 +52,12 @@ class AttackPatterns(SyncResource):
     def malware(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "malware", params=kwargs)
 
+    def malware_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "malware/overview", params=kwargs)
+
+    def threat_actors_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "threat_actors/overview", params=kwargs)
+
 
 class AsyncAttackPatterns(AsyncResource):
     _path = "/attack_patterns"
@@ -99,4 +105,18 @@ class AsyncAttackPatterns(AsyncResource):
     ) -> Any:
         return await self._sub(
             identifier, "malware", params=kwargs
+        )
+
+    async def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware/overview", params=kwargs
+        )
+
+    async def threat_actors_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "threat_actors/overview", params=kwargs
         )

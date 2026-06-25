@@ -30,6 +30,7 @@ from malloryapi.resources.exploitations import (
 )
 from malloryapi.resources.exploits import AsyncExploits, Exploits
 from malloryapi.resources.exports import AsyncExports, Exports
+from malloryapi.resources.extensions import AsyncExtensions, Extensions
 from malloryapi.resources.geographies import (
     AsyncGeographies,
     Geographies,
@@ -49,6 +50,7 @@ from malloryapi.resources.organizations import (
 )
 from malloryapi.resources.packages import AsyncPackages, Packages
 from malloryapi.resources.products import AsyncProducts, Products
+from malloryapi.resources.profiles import AsyncProfiles, Profiles
 from malloryapi.resources.references import (
     AsyncReferences,
     References,
@@ -141,6 +143,8 @@ class MalloryApi:
         self.packages = Packages(self._http)
         self.geographies = Geographies(self._http)
         self.tenants = Tenants(self._http)
+        self.profiles = Profiles(self._http)
+        self.extensions = Extensions(self._http)
 
         # Account
         self.user = User(self._http)
@@ -234,6 +238,8 @@ class AsyncMalloryApi:
         self.packages = AsyncPackages(self._http)
         self.geographies = AsyncGeographies(self._http)
         self.tenants = AsyncTenants(self._http)
+        self.profiles = AsyncProfiles(self._http)
+        self.extensions = AsyncExtensions(self._http)
 
         # Account
         self.user = AsyncUser(self._http)

@@ -112,6 +112,12 @@ class Vulnerabilities(SyncResource):
             f"{self._path}/{identifier}/enrich"
         )
 
+    def malware_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "malware/overview", params=kwargs)
+
+    def threat_actors_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "threat_actors/overview", params=kwargs)
+
 
 class AsyncVulnerabilities(AsyncResource):
     _path = "/vulnerabilities"
@@ -237,4 +243,18 @@ class AsyncVulnerabilities(AsyncResource):
     async def enrich(self, identifier: str) -> dict[str, Any]:
         return await self._http.post(
             f"{self._path}/{identifier}/enrich"
+        )
+
+    async def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware/overview", params=kwargs
+        )
+
+    async def threat_actors_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "threat_actors/overview", params=kwargs
         )
