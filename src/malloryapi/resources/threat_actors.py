@@ -58,6 +58,13 @@ class ThreatActors(SyncResource):
             identifier, "attack_patterns", params=kwargs
         )
 
+    def attack_patterns_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "attack_patterns/overview", params=kwargs
+        )
+
     def exploitations(
         self, identifier: str, **kwargs: Any
     ) -> Any:
@@ -65,8 +72,22 @@ class ThreatActors(SyncResource):
             identifier, "exploitations", params=kwargs
         )
 
+    def exploitations_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "exploitations/overview", params=kwargs
+        )
+
     def malware(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "malware", params=kwargs)
+
+    def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "malware/overview", params=kwargs
+        )
 
     def source_geographies(
         self,
@@ -91,6 +112,13 @@ class ThreatActors(SyncResource):
         data = self._sub(identifier, "source-geographies", params=params)
         return _parse_paginated(data)
 
+    def source_geographies_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "source-geographies/overview", params=kwargs
+        )
+
     def target_geographies(
         self,
         identifier: str,
@@ -114,6 +142,13 @@ class ThreatActors(SyncResource):
         data = self._sub(identifier, "target-geographies", params=params)
         return _parse_paginated(data)
 
+    def target_geographies_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "target-geographies/overview", params=kwargs
+        )
+
     def target_industries(
         self,
         identifier: str,
@@ -136,6 +171,13 @@ class ThreatActors(SyncResource):
         params = {k: v for k, v in params.items() if v is not None}
         data = self._sub(identifier, "target-industries", params=params)
         return _parse_paginated(data)
+
+    def target_industries_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "target-industries/overview", params=kwargs
+        )
 
     def delete(self, identifier: str) -> Any:
         return self._delete(identifier)
@@ -197,6 +239,13 @@ class AsyncThreatActors(AsyncResource):
             identifier, "attack_patterns", params=kwargs
         )
 
+    async def attack_patterns_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "attack_patterns/overview", params=kwargs
+        )
+
     async def exploitations(
         self, identifier: str, **kwargs: Any
     ) -> Any:
@@ -204,11 +253,25 @@ class AsyncThreatActors(AsyncResource):
             identifier, "exploitations", params=kwargs
         )
 
+    async def exploitations_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "exploitations/overview", params=kwargs
+        )
+
     async def malware(
         self, identifier: str, **kwargs: Any
     ) -> Any:
         return await self._sub(
             identifier, "malware", params=kwargs
+        )
+
+    async def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware/overview", params=kwargs
         )
 
     async def source_geographies(
@@ -236,6 +299,13 @@ class AsyncThreatActors(AsyncResource):
         )
         return _parse_paginated(data)
 
+    async def source_geographies_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "source-geographies/overview", params=kwargs
+        )
+
     async def target_geographies(
         self,
         identifier: str,
@@ -261,6 +331,13 @@ class AsyncThreatActors(AsyncResource):
         )
         return _parse_paginated(data)
 
+    async def target_geographies_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "target-geographies/overview", params=kwargs
+        )
+
     async def target_industries(
         self,
         identifier: str,
@@ -285,6 +362,13 @@ class AsyncThreatActors(AsyncResource):
             identifier, "target-industries", params=params
         )
         return _parse_paginated(data)
+
+    async def target_industries_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "target-industries/overview", params=kwargs
+        )
 
     async def delete(self, identifier: str) -> Any:
         return await self._delete(identifier)

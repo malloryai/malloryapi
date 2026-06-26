@@ -30,6 +30,10 @@ from malloryapi.resources.exploitations import (
 )
 from malloryapi.resources.exploits import AsyncExploits, Exploits
 from malloryapi.resources.exports import AsyncExports, Exports
+from malloryapi.resources.extensions import (
+    AsyncExtensions,
+    Extensions,
+)
 from malloryapi.resources.geographies import (
     AsyncGeographies,
     Geographies,
@@ -139,6 +143,7 @@ class MalloryApi:
         self.vulnerable_configurations = VulnerableConfigurations(self._http)
         self.assets = Assets(self._http)
         self.packages = Packages(self._http)
+        self.extensions = Extensions(self._http)
         self.geographies = Geographies(self._http)
         self.tenants = Tenants(self._http)
 
@@ -232,6 +237,7 @@ class AsyncMalloryApi:
         self.vulnerable_configurations = AsyncVulnerableConfigurations(self._http)
         self.assets = AsyncAssets(self._http)
         self.packages = AsyncPackages(self._http)
+        self.extensions = AsyncExtensions(self._http)
         self.geographies = AsyncGeographies(self._http)
         self.tenants = AsyncTenants(self._http)
 

@@ -97,11 +97,25 @@ class Vulnerabilities(SyncResource):
     def malware(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "malware", params=kwargs)
 
+    def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "malware/overview", params=kwargs
+        )
+
     def threat_actors(
         self, identifier: str, **kwargs: Any
     ) -> Any:
         return self._sub(
             identifier, "threat_actors", params=kwargs
+        )
+
+    def threat_actors_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "threat_actors/overview", params=kwargs
         )
 
     def delete(self, identifier: str) -> Any:
@@ -224,11 +238,25 @@ class AsyncVulnerabilities(AsyncResource):
             identifier, "malware", params=kwargs
         )
 
+    async def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware/overview", params=kwargs
+        )
+
     async def threat_actors(
         self, identifier: str, **kwargs: Any
     ) -> Any:
         return await self._sub(
             identifier, "threat_actors", params=kwargs
+        )
+
+    async def threat_actors_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "threat_actors/overview", params=kwargs
         )
 
     async def delete(self, identifier: str) -> Any:

@@ -75,12 +75,27 @@ class Workspaces(SyncResource):
             f"{self._path}/{quote(uuid, safe='')}/add_entities", json=data
         )
 
+    def remove_entities(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_entities", json=data
+        )
+
     def add_topics(self, uuid: str, data: dict[str, Any]) -> Any:
         return self._post(f"{self._path}/{quote(uuid, safe='')}/add_topics", json=data)
+
+    def remove_topics(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_topics", json=data
+        )
 
     def add_sources(self, uuid: str, data: dict[str, Any]) -> Any:
         return self._post(
             f"{self._path}/{quote(uuid, safe='')}/add_sources", json=data
+        )
+
+    def remove_sources(self, uuid: str, data: dict[str, Any]) -> Any:
+        return self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_sources", json=data
         )
 
     def members(self, uuid: str) -> Any:
@@ -197,14 +212,29 @@ class AsyncWorkspaces(AsyncResource):
             f"{self._path}/{quote(uuid, safe='')}/add_entities", json=data
         )
 
+    async def remove_entities(self, uuid: str, data: dict[str, Any]) -> Any:
+        return await self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_entities", json=data
+        )
+
     async def add_topics(self, uuid: str, data: dict[str, Any]) -> Any:
         return await self._post(
             f"{self._path}/{quote(uuid, safe='')}/add_topics", json=data
         )
 
+    async def remove_topics(self, uuid: str, data: dict[str, Any]) -> Any:
+        return await self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_topics", json=data
+        )
+
     async def add_sources(self, uuid: str, data: dict[str, Any]) -> Any:
         return await self._post(
             f"{self._path}/{quote(uuid, safe='')}/add_sources", json=data
+        )
+
+    async def remove_sources(self, uuid: str, data: dict[str, Any]) -> Any:
+        return await self._post(
+            f"{self._path}/{quote(uuid, safe='')}/remove_sources", json=data
         )
 
     async def members(self, uuid: str) -> Any:

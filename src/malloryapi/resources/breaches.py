@@ -56,8 +56,22 @@ class Breaches(SyncResource):
             identifier, "attack-patterns", params=kwargs
         )
 
+    def attack_patterns_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "attack-patterns/overview", params=kwargs
+        )
+
     def malware(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "malware", params=kwargs)
+
+    def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "malware/overview", params=kwargs
+        )
 
     def mentions(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "mentions", params=kwargs)
@@ -67,6 +81,13 @@ class Breaches(SyncResource):
     ) -> Any:
         return self._sub(
             identifier, "threat-actors", params=kwargs
+        )
+
+    def threat_actors_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return self._sub(
+            identifier, "threat-actors/overview", params=kwargs
         )
 
     def delete(self, identifier: str) -> Any:
@@ -121,11 +142,25 @@ class AsyncBreaches(AsyncResource):
             identifier, "attack-patterns", params=kwargs
         )
 
+    async def attack_patterns_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "attack-patterns/overview", params=kwargs
+        )
+
     async def malware(
         self, identifier: str, **kwargs: Any
     ) -> Any:
         return await self._sub(
             identifier, "malware", params=kwargs
+        )
+
+    async def malware_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "malware/overview", params=kwargs
         )
 
     async def mentions(
@@ -140,6 +175,13 @@ class AsyncBreaches(AsyncResource):
     ) -> Any:
         return await self._sub(
             identifier, "threat-actors", params=kwargs
+        )
+
+    async def threat_actors_overview(
+        self, identifier: str, **kwargs: Any
+    ) -> Any:
+        return await self._sub(
+            identifier, "threat-actors/overview", params=kwargs
         )
 
     async def delete(self, identifier: str) -> Any:
