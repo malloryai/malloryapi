@@ -84,3 +84,24 @@ class TestWorkspacesMethods:
         request = httpx_mock.get_request()
         assert request.method == "DELETE"
         assert "/workspaces/ws-1/topics/ransomware" in str(request.url)
+
+    def test_remove_entities(self, client, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        client.workspaces.remove_entities(WS, {"entities": ["e-1"]})
+        request = httpx_mock.get_request()
+        assert request.method == "POST"
+        assert "/workspaces/ws-1/remove_entities" in str(request.url)
+
+    def test_remove_topics(self, client, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        client.workspaces.remove_topics(WS, {"topics": ["ransomware"]})
+        request = httpx_mock.get_request()
+        assert request.method == "POST"
+        assert "/workspaces/ws-1/remove_topics" in str(request.url)
+
+    def test_remove_sources(self, client, httpx_mock: HTTPXMock):
+        httpx_mock.add_response(json={"ok": True})
+        client.workspaces.remove_sources(WS, {"sources": ["s-1"]})
+        request = httpx_mock.get_request()
+        assert request.method == "POST"
+        assert "/workspaces/ws-1/remove_sources" in str(request.url)
