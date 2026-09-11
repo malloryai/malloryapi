@@ -17,6 +17,8 @@ def paginate_sync(
         for vuln in paginate_sync(client.vulnerabilities.list, limit=50):
             print(vuln["cve_id"])
     """
+    if limit <= 0:
+        raise ValueError("limit must be positive")
     offset = 0
     while True:
         page = fetch(offset=offset, limit=limit, **kwargs)
@@ -43,6 +45,8 @@ async def paginate_async(
         ):
             print(vuln["cve_id"])
     """
+    if limit <= 0:
+        raise ValueError("limit must be positive")
     offset = 0
     while True:
         page = await fetch(offset=offset, limit=limit, **kwargs)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 from malloryapi._types import PaginatedResponse
 from malloryapi.resources._base import (
@@ -10,6 +11,24 @@ from malloryapi.resources._base import (
     SyncResource,
     _parse_paginated,
 )
+
+_OMIT = object()
+
+
+def _parse_story_observables(
+    data: Any, *, offset: int, limit: int
+) -> PaginatedResponse:
+    """Adapt the story-specific observables envelope without dropping items."""
+    if isinstance(data, dict) and "observables" in data:
+        items = data.get("observables", [])
+        total = data.get("total", len(items))
+        return PaginatedResponse(
+            items=items,
+            total=total,
+            offset=offset,
+            limit=limit,
+        )
+    return _parse_paginated(data)
 
 
 class Stories(SyncResource):
@@ -26,74 +45,150 @@ class Stories(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
-    def topics(self) -> list[dict[str, Any]]:
-        return self._http.get(f"{self._path}/topics")
+    def topics(
+        self,
+        *,
+        sort: str = "story_count",
+        order: str = "desc",
+        story_count__gt: int | None = None,
+        story_count__gte: int | None = None,
+        story_count__lt: int | None = None,
+        story_count__lte: int | None = None,
+        latest_story_timestamp__gt: str | None = None,
+        latest_story_timestamp__gte: str | None = None,
+        latest_story_timestamp__lt: str | None = None,
+        latest_story_timestamp__lte: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return self._http.get(
+            f"{self._path}/topics",
+            params={
+                "sort": sort,
+                "order": order,
+                "story_count__gt": story_count__gt,
+                "story_count__gte": story_count__gte,
+                "story_count__lt": story_count__lt,
+                "story_count__lte": story_count__lte,
+                "latest_story_timestamp__gt": latest_story_timestamp__gt,
+                "latest_story_timestamp__gte": latest_story_timestamp__gte,
+                "latest_story_timestamp__lt": latest_story_timestamp__lt,
+                "latest_story_timestamp__lte": latest_story_timestamp__lte,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
 
     def topics_taxonomy(self) -> Any:
         return self._http.get(f"{self._path}/topics/taxonomy")
 
-    def get(self, identifier: str) -> dict[str, Any]:
-        return self._get(identifier)
+    def get(
+        self,
+        identifier: str,
+        *,
+        include_merged: bool = False,
+        include_proto: bool = False,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return self._http.get(
+            f"{self._path}/{quote(identifier, safe='')}",
+            params={
+                "include_merged": include_merged,
+                "include_proto": include_proto,
+                **kwargs,
+            },
+        )
 
-    def references(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
+    def references(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
         data = self._sub(identifier, "references", params=kwargs)
         return _parse_paginated(data)
 
-    def events(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
+    def events(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
         data = self._sub(identifier, "events", params=kwargs)
         return _parse_paginated(data)
 
-    def similar(
-        self, identifier: str, **kwargs: Any
-    ) -> list[dict[str, Any]]:
+    def similar(self, identifier: str, **kwargs: Any) -> list[dict[str, Any]]:
         return self._sub(identifier, "similar", params=kwargs)
 
-    def entities(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    def entities(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "entities", params=kwargs)
 
-    def export(self, identifier: str) -> dict[str, Any]:
-        return self._sub(identifier, "export")
+    def export(
+        self,
+        identifier: str,
+        *,
+        include_analysis: bool = True,
+        relationships_created_after: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return self._sub(
+            identifier,
+            "export",
+            params={
+                "include_analysis": include_analysis,
+                "relationships_created_after": relationships_created_after,
+                **kwargs,
+            },
+        )
 
     def update(
         self,
         identifier: str,
         *,
-        title: str | None = None,
-        description: str | None = None,
+        title: Any = _OMIT,
+        description: Any = _OMIT,
+        reason: str | None = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         data = {}
-        if title is not None:
+        if title is not _OMIT:
             data["title"] = title
-        if description is not None:
+        if description is not _OMIT:
             data["description"] = description
-        return self._patch(identifier, json=data)
+        return self._patch(
+            identifier,
+            json=data,
+            params={"reason": reason, **kwargs},
+        )
 
-    def citations(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
+    def citations(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
         data = self._sub(identifier, "citations", params=kwargs)
         return _parse_paginated(data)
 
     def observables(
-        self, identifier: str, **kwargs: Any
+        self,
+        identifier: str,
+        *,
+        observable_type: str | None = None,
+        verdict: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        **kwargs: Any,
     ) -> PaginatedResponse:
-        data = self._sub(identifier, "observables", params=kwargs)
-        return _parse_paginated(data)
+        data = self._sub(
+            identifier,
+            "observables",
+            params={
+                "observable_type": observable_type,
+                "verdict": verdict,
+                "limit": limit,
+                "offset": offset,
+                **kwargs,
+            },
+        )
+        return _parse_story_observables(data, offset=offset, limit=limit)
 
-    def timeline(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
+    def timeline(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
         data = self._sub(identifier, "timeline", params=kwargs)
         return _parse_paginated(data)
 
@@ -123,89 +218,151 @@ class AsyncStories(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return await self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
-    async def topics(self) -> list[dict[str, Any]]:
-        return await self._http.get(f"{self._path}/topics")
+    async def topics(
+        self,
+        *,
+        sort: str = "story_count",
+        order: str = "desc",
+        story_count__gt: int | None = None,
+        story_count__gte: int | None = None,
+        story_count__lt: int | None = None,
+        story_count__lte: int | None = None,
+        latest_story_timestamp__gt: str | None = None,
+        latest_story_timestamp__gte: str | None = None,
+        latest_story_timestamp__lt: str | None = None,
+        latest_story_timestamp__lte: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return await self._http.get(
+            f"{self._path}/topics",
+            params={
+                "sort": sort,
+                "order": order,
+                "story_count__gt": story_count__gt,
+                "story_count__gte": story_count__gte,
+                "story_count__lt": story_count__lt,
+                "story_count__lte": story_count__lte,
+                "latest_story_timestamp__gt": latest_story_timestamp__gt,
+                "latest_story_timestamp__gte": latest_story_timestamp__gte,
+                "latest_story_timestamp__lt": latest_story_timestamp__lt,
+                "latest_story_timestamp__lte": latest_story_timestamp__lte,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
 
     async def topics_taxonomy(self) -> Any:
         return await self._http.get(f"{self._path}/topics/taxonomy")
 
-    async def get(self, identifier: str) -> dict[str, Any]:
-        return await self._get(identifier)
-
-    async def references(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
-        data = await self._sub(
-            identifier, "references", params=kwargs
+    async def get(
+        self,
+        identifier: str,
+        *,
+        include_merged: bool = False,
+        include_proto: bool = False,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return await self._http.get(
+            f"{self._path}/{quote(identifier, safe='')}",
+            params={
+                "include_merged": include_merged,
+                "include_proto": include_proto,
+                **kwargs,
+            },
         )
+
+    async def references(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = await self._sub(identifier, "references", params=kwargs)
         return _parse_paginated(data)
 
-    async def events(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
-        data = await self._sub(
-            identifier, "events", params=kwargs
-        )
+    async def events(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = await self._sub(identifier, "events", params=kwargs)
         return _parse_paginated(data)
 
-    async def similar(
-        self, identifier: str, **kwargs: Any
-    ) -> list[dict[str, Any]]:
-        return await self._sub(
-            identifier, "similar", params=kwargs
-        )
+    async def similar(self, identifier: str, **kwargs: Any) -> list[dict[str, Any]]:
+        return await self._sub(identifier, "similar", params=kwargs)
 
-    async def entities(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "entities", params=kwargs
-        )
+    async def entities(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "entities", params=kwargs)
 
-    async def export(self, identifier: str) -> dict[str, Any]:
-        return await self._sub(identifier, "export")
+    async def export(
+        self,
+        identifier: str,
+        *,
+        include_analysis: bool = True,
+        relationships_created_after: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return await self._sub(
+            identifier,
+            "export",
+            params={
+                "include_analysis": include_analysis,
+                "relationships_created_after": relationships_created_after,
+                **kwargs,
+            },
+        )
 
     async def update(
         self,
         identifier: str,
         *,
-        title: str | None = None,
-        description: str | None = None,
+        title: Any = _OMIT,
+        description: Any = _OMIT,
+        reason: str | None = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         data = {}
-        if title is not None:
+        if title is not _OMIT:
             data["title"] = title
-        if description is not None:
+        if description is not _OMIT:
             data["description"] = description
-        return await self._patch(identifier, json=data)
-
-    async def citations(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
-        data = await self._sub(
-            identifier, "citations", params=kwargs
+        return await self._patch(
+            identifier,
+            json=data,
+            params={"reason": reason, **kwargs},
         )
+
+    async def citations(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = await self._sub(identifier, "citations", params=kwargs)
         return _parse_paginated(data)
 
     async def observables(
-        self, identifier: str, **kwargs: Any
+        self,
+        identifier: str,
+        *,
+        observable_type: str | None = None,
+        verdict: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        **kwargs: Any,
     ) -> PaginatedResponse:
         data = await self._sub(
-            identifier, "observables", params=kwargs
+            identifier,
+            "observables",
+            params={
+                "observable_type": observable_type,
+                "verdict": verdict,
+                "limit": limit,
+                "offset": offset,
+                **kwargs,
+            },
         )
-        return _parse_paginated(data)
+        return _parse_story_observables(data, offset=offset, limit=limit)
 
-    async def timeline(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
-        data = await self._sub(
-            identifier, "timeline", params=kwargs
-        )
+    async def timeline(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = await self._sub(identifier, "timeline", params=kwargs)
         return _parse_paginated(data)
 
     async def exposure(

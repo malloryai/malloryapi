@@ -35,7 +35,7 @@ class Integrations(SyncResource):
         return self._patch(integration_uuid, json=data)
 
     def delete(self, integration_uuid: str, *, force: bool = False) -> Any:
-        params = {"force": force} if force else None
+        params = {"force": force}
         return self._http.delete(
             f"{self._path}/{quote(integration_uuid, safe='')}", params=params
         )
@@ -84,7 +84,7 @@ class AsyncIntegrations(AsyncResource):
         return await self._patch(integration_uuid, json=data)
 
     async def delete(self, integration_uuid: str, *, force: bool = False) -> Any:
-        params = {"force": force} if force else None
+        params = {"force": force}
         return await self._http.delete(
             f"{self._path}/{quote(integration_uuid, safe='')}", params=params
         )

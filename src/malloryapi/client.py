@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import httpx
+
 from malloryapi._http import (
     DEFAULT_BASE_URL,
     DEFAULT_TIMEOUT,
@@ -34,6 +36,11 @@ from malloryapi.resources.extensions import (
     AsyncExtensions,
     Extensions,
 )
+from malloryapi.resources.finding_definitions import (
+    AsyncFindingDefinitions,
+    FindingDefinitions,
+)
+from malloryapi.resources.findings import AsyncFindings, Findings
 from malloryapi.resources.geographies import (
     AsyncGeographies,
     Geographies,
@@ -53,12 +60,14 @@ from malloryapi.resources.organizations import (
 )
 from malloryapi.resources.packages import AsyncPackages, Packages
 from malloryapi.resources.products import AsyncProducts, Products
+from malloryapi.resources.profiles import AsyncProfiles, Profiles
 from malloryapi.resources.references import (
     AsyncReferences,
     References,
 )
 from malloryapi.resources.schedules import AsyncSchedules, Schedules
 from malloryapi.resources.search import AsyncSearch, Search
+from malloryapi.resources.sightings import AsyncSightings, Sightings
 from malloryapi.resources.sources import AsyncSources, Sources
 from malloryapi.resources.stories import AsyncStories, Stories
 from malloryapi.resources.technology_product_advisories import (
@@ -76,7 +85,9 @@ from malloryapi.resources.vulnerabilities import (
     Vulnerabilities,
 )
 from malloryapi.resources.vulnerable_configurations import (
+    AsyncVtpcs,
     AsyncVulnerableConfigurations,
+    Vtpcs,
     VulnerableConfigurations,
 )
 from malloryapi.resources.weaknesses import (
@@ -103,8 +114,15 @@ class MalloryApi:
         api_key: str | None = None,
         base_url: str = DEFAULT_BASE_URL,
         timeout: float = DEFAULT_TIMEOUT,
+        *,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
-        self._http = SyncHttpClient(api_key=api_key, base_url=base_url, timeout=timeout)
+        self._http = SyncHttpClient(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+            transport=transport,
+        )
 
         # Entities
         self.vulnerabilities = Vulnerabilities(self._http)
@@ -141,11 +159,16 @@ class MalloryApi:
         self.exports = Exports(self._http)
         self.integrations = Integrations(self._http)
         self.vulnerable_configurations = VulnerableConfigurations(self._http)
+        self.vtpcs = Vtpcs(self._http)
         self.assets = Assets(self._http)
         self.packages = Packages(self._http)
         self.extensions = Extensions(self._http)
         self.geographies = Geographies(self._http)
         self.tenants = Tenants(self._http)
+        self.findings = Findings(self._http)
+        self.finding_definitions = FindingDefinitions(self._http)
+        self.profiles = Profiles(self._http)
+        self.sightings = Sightings(self._http)
 
         # Account
         self.user = User(self._http)
@@ -195,9 +218,14 @@ class AsyncMalloryApi:
         api_key: str | None = None,
         base_url: str = DEFAULT_BASE_URL,
         timeout: float = DEFAULT_TIMEOUT,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._http = AsyncHttpClient(
-            api_key=api_key, base_url=base_url, timeout=timeout
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+            transport=transport,
         )
 
         # Entities
@@ -235,11 +263,16 @@ class AsyncMalloryApi:
         self.exports = AsyncExports(self._http)
         self.integrations = AsyncIntegrations(self._http)
         self.vulnerable_configurations = AsyncVulnerableConfigurations(self._http)
+        self.vtpcs = AsyncVtpcs(self._http)
         self.assets = AsyncAssets(self._http)
         self.packages = AsyncPackages(self._http)
         self.extensions = AsyncExtensions(self._http)
         self.geographies = AsyncGeographies(self._http)
         self.tenants = AsyncTenants(self._http)
+        self.findings = AsyncFindings(self._http)
+        self.finding_definitions = AsyncFindingDefinitions(self._http)
+        self.profiles = AsyncProfiles(self._http)
+        self.sightings = AsyncSightings(self._http)
 
         # Account
         self.user = AsyncUser(self._http)

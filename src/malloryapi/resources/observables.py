@@ -40,6 +40,18 @@ class Observables(SyncResource):
     def create(self, data: dict[str, Any]) -> dict[str, Any]:
         return self._post(json=data)
 
+    def enrichment_providers(self) -> dict[str, Any]:
+        return self._http.get(f"{self._path}/enrichment-providers")
+
+    def sources(self) -> dict[str, Any]:
+        return self._http.get(f"{self._path}/sources")
+
+    def tag_options(self, *, scope: str | None = None, **kwargs: Any) -> dict[str, Any]:
+        return self._http.get(
+            f"{self._path}/tags",
+            params={"scope": scope, **kwargs},
+        )
+
     def get(self, uuid: str) -> dict[str, Any]:
         return self._get(uuid)
 
@@ -52,8 +64,7 @@ class Observables(SyncResource):
     ) -> dict[str, Any]:
         params = {"scope": scope} if scope else None
         return self._http.get(
-            f"{self._path}/{quote(observable_type, safe='')}"
-            f"/{quote(name, safe='')}",
+            f"{self._path}/{quote(observable_type, safe='')}/{quote(name, safe='')}",
             params=params,
         )
 
@@ -62,6 +73,58 @@ class Observables(SyncResource):
 
     def delete(self, uuid: str) -> Any:
         return self._delete(uuid)
+
+    def entities(
+        self,
+        uuid: str,
+        *,
+        entity_type: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = self._sub(
+            uuid,
+            "entities",
+            params={
+                "entity_type": entity_type,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
+        return _parse_paginated(data)
+
+    def entities_by_type_name(
+        self,
+        observable_type: str,
+        name: str,
+        *,
+        entity_type: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = self._http.get(
+            f"{self._path}/{quote(observable_type, safe='')}"
+            f"/{quote(name, safe='')}/entities",
+            params={
+                "entity_type": entity_type,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
+        return _parse_paginated(data)
+
+    def tags(self, uuid: str) -> dict[str, Any]:
+        return self._sub(uuid, "tags")
+
+    def replace_tags(self, uuid: str, tags: list[str]) -> dict[str, Any]:
+        return self._http.put(
+            f"{self._path}/{quote(uuid, safe='')}/tags",
+            json={"tags": tags},
+        )
 
     def opinions(
         self,
@@ -142,6 +205,20 @@ class AsyncObservables(AsyncResource):
     async def create(self, data: dict[str, Any]) -> dict[str, Any]:
         return await self._post(json=data)
 
+    async def enrichment_providers(self) -> dict[str, Any]:
+        return await self._http.get(f"{self._path}/enrichment-providers")
+
+    async def sources(self) -> dict[str, Any]:
+        return await self._http.get(f"{self._path}/sources")
+
+    async def tag_options(
+        self, *, scope: str | None = None, **kwargs: Any
+    ) -> dict[str, Any]:
+        return await self._http.get(
+            f"{self._path}/tags",
+            params={"scope": scope, **kwargs},
+        )
+
     async def get(self, uuid: str) -> dict[str, Any]:
         return await self._get(uuid)
 
@@ -154,8 +231,7 @@ class AsyncObservables(AsyncResource):
     ) -> dict[str, Any]:
         params = {"scope": scope} if scope else None
         return await self._http.get(
-            f"{self._path}/{quote(observable_type, safe='')}"
-            f"/{quote(name, safe='')}",
+            f"{self._path}/{quote(observable_type, safe='')}/{quote(name, safe='')}",
             params=params,
         )
 
@@ -164,6 +240,58 @@ class AsyncObservables(AsyncResource):
 
     async def delete(self, uuid: str) -> Any:
         return await self._delete(uuid)
+
+    async def entities(
+        self,
+        uuid: str,
+        *,
+        entity_type: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            uuid,
+            "entities",
+            params={
+                "entity_type": entity_type,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
+        return _parse_paginated(data)
+
+    async def entities_by_type_name(
+        self,
+        observable_type: str,
+        name: str,
+        *,
+        entity_type: str | None = None,
+        offset: int = 0,
+        limit: int = 100,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = await self._http.get(
+            f"{self._path}/{quote(observable_type, safe='')}"
+            f"/{quote(name, safe='')}/entities",
+            params={
+                "entity_type": entity_type,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
+        return _parse_paginated(data)
+
+    async def tags(self, uuid: str) -> dict[str, Any]:
+        return await self._sub(uuid, "tags")
+
+    async def replace_tags(self, uuid: str, tags: list[str]) -> dict[str, Any]:
+        return await self._http.put(
+            f"{self._path}/{quote(uuid, safe='')}/tags",
+            json={"tags": tags},
+        )
 
     async def opinions(
         self,

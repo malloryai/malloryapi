@@ -16,7 +16,11 @@ class Geographies(SyncResource):
     _path = "/geographies"
 
     def list(self) -> PaginatedResponse:
-        return _parse_paginated(self._http.get(self._path))
+        return _parse_paginated(
+            self._http.get(self._path),
+            items_key="countries",
+            is_paginated=False,
+        )
 
     def get(self, code: str) -> dict[str, Any]:
         return self._get(code)
@@ -26,7 +30,11 @@ class AsyncGeographies(AsyncResource):
     _path = "/geographies"
 
     async def list(self) -> PaginatedResponse:
-        return _parse_paginated(await self._http.get(self._path))
+        return _parse_paginated(
+            await self._http.get(self._path),
+            items_key="countries",
+            is_paginated=False,
+        )
 
     async def get(self, code: str) -> dict[str, Any]:
         return await self._get(code)

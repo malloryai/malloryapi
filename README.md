@@ -88,9 +88,63 @@ async with AsyncMalloryApi(api_key="sk-...") as client:
 | Mentions | `client.mentions` | `list`, `actors`, `vulnerabilities` |
 | Search   | `client.search`   | `query`                             |
 
+### Platform and investigation
+
+| Resource | Accessor | Use |
+| --- | --- | --- |
+| Findings and tickets | `client.findings` | Findings, bulk updates, ticket connections and linked findings |
+| Finding definitions | `client.finding_definitions` | List, create, get, update and delete definitions |
+| Profiles | `client.profiles` | Profile CRUD, entities and topics |
+| Sightings | `client.sightings` | List, create and bulk-create sightings |
+| Assets | `client.assets` | Live catalog, match summaries and matched-asset queries |
+| Observables | `client.observables` | Observable CRUD, entities, opinions, tags and enrichment-provider metadata |
+| CVE inference | `client.vulnerable_configurations`, `client.vtpcs` | Product/version inference using either API route |
+
+The SDK exposes all 252 operations in the public OpenAPI snapshot captured on
+September 11, 2026, in both sync and async clients. Existing methods for routes
+omitted from the public schema remain available for compatibility.
+
+### Query parameters and request bodies
+
+Methods accept documented filters as named keyword arguments, including through
+`**kwargs` where the filter set is large. Query values of `None` are omitted;
+`False`, `0` and lists are preserved. JSON request bodies keep explicit `null`
+values. Dictionary bodies follow the API schema and are validated by the server.
+
+```python
+products = client.products.search(
+    {"vendor": "apache", "product": "http_server"},
+    offset=0, limit=20, sort="name", order="asc",
+)
+client.references.create(
+    ["https://example.com/report"], submitter="my-integration"
+)
+findings = client.findings.list(limit=20)
+matches = client.assets.list_matches(limit=20)
+```
+
+### CVE inference
+
+Both inference resources return `InferenceResponse`, which keeps the existing
+pagination interface and exposes `resolution`, `normalized_request`, `mode` and
+`coverage`. Inspect identity resolution and coverage when interpreting results.
+
+```python
+result = client.vtpcs.search(
+    {"vendor": "apache", "product": "http_server", "version": "2.4.49"},
+    limit=50, include_unknown=True,
+)
+print(result.resolution, result.coverage)
+for vulnerability in result:
+    print(vulnerability)
+```
+
 ## Pagination
 
-All list methods return a `PaginatedResponse` with `.items`, `.total`, `.offset`, `.limit`, and `.has_more`:
+Paginated list methods return a `PaginatedResponse` with `.items`, `.total`,
+`.offset`, `.limit`, and `.has_more`. Additional envelope fields are preserved in
+`.metadata`. Methods with specialized response envelopes, such as asset matches,
+return the API dictionary directly.
 
 ```python
 page = client.vulnerabilities.list(offset=0, limit=50)
@@ -120,6 +174,9 @@ async for vuln in paginate_async(client.vulnerabilities.list):
     print(vuln["cve_id"])
 ```
 
+Auto-pagination requires a positive `limit` and stops on an empty page or the
+last page reported by the API.
+
 ## Trending
 
 Entities with trending support accept a `period` parameter (`"1d"`, `"7d"`, or `"30d"`):
@@ -148,6 +205,72 @@ except AuthenticationError:
 ```
 
 All exceptions inherit from `APIError` and include `status_code` and `response_body` attributes.
+
+Successful operations with an empty `204 No Content` response return `None`.
+
+## CLI
+
+Use `malloryapi --help-resources` to discover resources and methods. Supply
+additional keyword arguments with repeatable `--param NAME=VALUE` options;
+JSON booleans, numbers, lists and objects keep their types.
+
+```bash
+malloryapi findings list --limit 20
+malloryapi stories get STORY_UUID --param include_proto=true
+malloryapi products search '{"vendor":"apache","product":"http_server"}' --limit 20
+malloryapi references create --urls https://example.com/report --param submitter=my-integration
+```
+
+## Development and contract checks
+
+```bash
+python -m pytest -q
+python -m ruff check src/ tests/ scripts/
+python scripts/check_openapi.py
+# Compare with a separately downloaded current schema:
+python scripts/check_openapi.py --schema /path/to/openapi.json
+```
+
+The contract check uses an HTTP mock transport, so it sends no API requests.
+It checks every public method/path, path substitution, query parameter and JSON
+body field in both clients. Regression tests also cover response envelopes and
+no-content success. The frozen fixture excludes descriptive documentation but
+retains operation and schema contracts. Passing checks establish SDK transport
+coverage; they do not exercise authorization or server-side business validation.
+
+### Test structure
+
+- `test_openapi_contract.py` checks the frozen public schema against both clients.
+  Update the fixture when the API contract changes; avoid copying its endpoint
+  and parameter tables into individual tests.
+- Focused regression tests cover behavior beyond route forwarding: response
+  envelopes, pagination, errors, CLI arguments, legacy routes, and the difference
+  between omitted values and JSON `null`.
+- `test_contract_checker.py` injects deliberately broken implementations to prove
+  the contract checker detects missing routes and corrupted parameters or bodies.
+
+Use the shared `sdk` fixture for resource and HTTP tests. Each test runs against
+both sync and async clients through a real HTTPX client with an in-memory
+transport. Configure one response per expected request; unexpected additional
+requests fail. The fixture closes the client automatically.
+
+```python
+async def test_empty_success(sdk):
+    sdk.respond(status_code=204)
+
+    result = await sdk.call(sdk.client.workspaces.delete, "workspace-1")
+
+    assert result is None
+    assert sdk.requests[0].method == "DELETE"
+```
+
+Both public clients accept a keyword-only `transport=` dependency:
+`httpx.BaseTransport` for `MalloryApi` and `httpx.AsyncBaseTransport` for
+`AsyncMalloryApi`. `httpx.MockTransport` supports both. The SDK owns its HTTPX
+client and closes the supplied transport when the SDK is closed; use a context
+manager or call `close()` / `aclose()`. Tests should inject this dependency instead
+of replacing private client attributes. CLI tests similarly call
+`main(argv, transport=...)` and capture output with pytest's `capsys` fixture.
 
 ## License
 

@@ -1,312 +1,223 @@
-"""Tests for the malloryapi CLI."""
-
-from __future__ import annotations
+"""CLI behavior through the real SDK and an explicitly injected HTTP transport."""
 
 import json
-import os
-from io import StringIO
-from unittest.mock import patch
 
-from pytest_httpx import HTTPXMock
+import httpx
+import pytest
 
 from malloryapi.cli import main
 
-TEST_API_KEY = "test-api-key-1234"
+
+@pytest.fixture
+def run_cli(capsys):
+    def run(args, *, payload=None, status=200):
+        requests = []
+
+        def respond(request):
+            assert not requests, "CLI dispatch must issue only one request"
+            requests.append(request)
+            return (
+                httpx.Response(status, json=payload)
+                if status != 204
+                else httpx.Response(204)
+            )
+
+        class Transport(httpx.MockTransport):
+            closed = False
+
+            def close(self):
+                self.closed = True
+                super().close()
+
+        transport = Transport(respond)
+        code = main(["--api-key", "test-key", *args], transport=transport)
+        output = capsys.readouterr()
+        assert transport.closed, "CLI must close its client on success and failure"
+        return code, output.out, output.err, requests
+
+    return run
 
 
-def _run_cli(argv: list[str], env: dict | None = None) -> tuple[int, str, str]:
-    """Run CLI with argv; return (exit_code, stdout, stderr)."""
-    env = env or {}
-    with patch("sys.argv", ["malloryapi"] + argv), patch(
-        "sys.stdout", StringIO()
-    ), patch("sys.stderr", StringIO()), patch(
-        "sys.stdin", StringIO()
+def test_discovery_includes_all_sdk_resources_and_aliases(run_cli):
+    code, out, err, requests = run_cli(["--help-resources"])
+    assert (code, err, requests) == (0, "", [])
+    data = json.loads(out)
+    assert data["aliases"]["vulns"] == "vulnerabilities"
+    assert data["aliases"]["actors"] == "threat_actors"
+    for resource in (
+        "findings",
+        "finding_definitions",
+        "profiles",
+        "sightings",
+        "vtpcs",
+        "extensions",
     ):
-        out = StringIO()
-        err = StringIO()
-        with patch("sys.stdout", out), patch("sys.stderr", err):
-            if env:
-                with patch.dict(os.environ, env, clear=False):
-                    code = main()
-            else:
-                code = main()
-        return code, out.getvalue(), err.getvalue()
+        assert resource in data["resources"]
+    assert {"get", "list"} <= set(data["resources"]["vulnerabilities"])
 
 
-class TestCliHelpResources:
-    def test_help_resources_exits_zero(self):
-        code, out, err = _run_cli(
-            ["--help-resources"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0
-        assert err == ""
-
-    def test_help_resources_output_has_resources_and_aliases(self):
-        code, out, err = _run_cli(
-            ["--help-resources"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        data = json.loads(out)
-        assert "resources" in data
-        assert "aliases" in data
-        assert "vulnerabilities" in data["resources"]
-        assert "list" in data["resources"]["vulnerabilities"]
-        assert "get" in data["resources"]["vulnerabilities"]
-        assert data["aliases"]["vulns"] == "vulnerabilities"
-        assert data["aliases"]["actors"] == "threat_actors"
+@pytest.mark.parametrize(
+    "args, error",
+    [
+        (["unknown", "list"], "Unknown resource"),
+        (["vulnerabilities", "unknown"], "Unknown method"),
+        (["vulnerabilities"], "Method required"),
+        (["vulnerabilities", "get"], "requires an identifier"),
+        (["search", "query"], "requires --q"),
+        (["workspaces", "remove_member", "ws-1"], "user_uuid"),
+        (["workspaces", "add_member", "ws-1", "not-json"], "must be valid JSON"),
+        (["stories", "list", "--param", "broken"], "NAME=VALUE"),
+        (["stories", "list", "--limit", "5", "--param", "limit=7"], "more than once"),
+    ],
+)
+def test_invalid_invocations_report_error_without_http(args, error, run_cli):
+    code, out, err, requests = run_cli(args)
+    assert code == 1
+    assert (out, requests) == ("", [])
+    assert error in json.loads(err)["error"]
 
 
-class TestCliErrors:
-    def test_unknown_resource_returns_one_and_lists_available(self):
-        code, out, err = _run_cli(
-            ["nonexistent", "list"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 1
-        err_data = json.loads(err)
-        assert "error" in err_data
-        assert "Unknown resource" in err_data["error"]
-        assert "nonexistent" in err_data["error"]
-
-    def test_unknown_method_returns_one_and_lists_methods(self):
-        code, out, err = _run_cli(
-            ["vulnerabilities", "nonexistent"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 1
-        err_data = json.loads(err)
-        assert "error" in err_data
-        assert "Unknown method" in err_data["error"]
-        assert "list" in err_data["error"] or "get" in err_data["error"]
-
-    def test_missing_method_returns_one(self):
-        code, out, err = _run_cli(
-            ["vulnerabilities"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 1
-        err_data = json.loads(err)
-        assert "Method required" in err_data["error"]
-
-    def test_get_without_identifier_returns_one(self):
-        code, out, err = _run_cli(
-            ["vulnerabilities", "get"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 1
-        err_data = json.loads(err)
-        assert "requires an identifier" in err_data["error"]
-
-    def test_search_query_without_q_returns_one(self):
-        code, out, err = _run_cli(
-            ["search", "query"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 1
-        err_data = json.loads(err)
-        assert "requires --q" in err_data["error"]
+@pytest.mark.parametrize(
+    "args, verb, path, body",
+    [
+        (["geo", "get", "US"], "GET", "/v1/geographies/US", None),
+        (["tenants", "users", "t-1"], "GET", "/v1/tenants/t-1/users", None),
+        (["assets", "profile_for", "host"], "GET", "/v1/assets/profile/host", None),
+        (["geo", "list"], "GET", "/v1/geographies", None),
+        (
+            ["workspaces", "remove_member", "ws-1", "user-1"],
+            "DELETE",
+            "/v1/workspaces/ws-1/members/user-1",
+            None,
+        ),
+        (
+            ["workspaces", "remove_entity", "ws-1", "actor", "e-1"],
+            "DELETE",
+            "/v1/workspaces/ws-1/entities/actor/e-1",
+            None,
+        ),
+        (
+            ["workspaces", "add_member", "ws-1", '{"user_uuid":"u-1","role":"admin"}'],
+            "POST",
+            "/v1/workspaces/ws-1/members",
+            {"user_uuid": "u-1", "role": "admin"},
+        ),
+        (
+            ["findings", "update", '{"status":"closed"}', "--param", "uuid=f-1"],
+            "PATCH",
+            "/v1/findings/f-1",
+            {"status": "closed"},
+        ),
+        (
+            ["products", "search", '{"vendor":"acme","product":"widget"}'],
+            "POST",
+            "/v1/products/search",
+            {"vendor": "acme", "product": "widget"},
+        ),
+    ],
+)
+def test_identifier_and_json_arguments_reach_the_correct_endpoint(
+    args, verb, path, body, run_cli
+):
+    code, _, err, requests = run_cli(args, payload={"data": [], "total": 0})
+    assert (code, err) == (0, "")
+    assert len(requests) == 1
+    assert (requests[0].method, requests[0].url.path) == (verb, path)
+    assert (json.loads(requests[0].content) if requests[0].content else None) == body
 
 
-class TestCliDispatchAndOutput:
-    def test_vulnerabilities_list_returns_paginated_json(
-        self, httpx_mock: HTTPXMock
-    ):
-        httpx_mock.add_response(
-            json={
-                "items": [
-                    {"uuid": "a", "cve_id": "CVE-2024-0001"},
-                ],
+def test_alias_and_typed_filters_preserve_values(run_cli):
+    code, out, err, requests = run_cli(
+        [
+            "vulns",
+            "list",
+            "--param",
+            "offset=0",
+            "--param",
+            "include_merged=false",
+            "--param",
+            "limit=7",
+            "--base-url",
+            "https://custom.example/v1",
+        ],
+        payload={
+            "data": [{"cve_id": "CVE-2026-0001"}],
+            "total": 1,
+            "offset": 0,
+            "limit": 7,
+        },
+    )
+    assert (code, err) == (0, "")
+    request = requests[0]
+    assert request.url.host == "custom.example"
+    assert request.url.path == "/v1/vulnerabilities"
+    assert dict(request.url.params) == {
+        "offset": "0",
+        "limit": "7",
+        "include_merged": "false",
+    }
+    assert json.loads(out)["items"] == [{"cve_id": "CVE-2026-0001"}]
+
+
+@pytest.mark.parametrize(
+    "flags, expected",
+    [
+        (["--raw"], [{"uuid": "one"}]),
+        (
+            ["--compact"],
+            {
+                "items": [{"uuid": "one"}],
                 "total": 1,
                 "offset": 0,
                 "limit": 10,
-            }
-        )
-        code, out, err = _run_cli(
-            ["vulnerabilities", "list", "--limit", "10"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0
-        assert err == ""
-        data = json.loads(out)
-        assert data["total"] == 1
-        assert data["limit"] == 10
-        assert len(data["items"]) == 1
-        assert data["items"][0]["cve_id"] == "CVE-2024-0001"
-
-    def test_vulnerabilities_get_returns_detail_json(
-        self, httpx_mock: HTTPXMock
-    ):
-        httpx_mock.add_response(
-            json={
-                "uuid": "abc",
-                "cve_id": "CVE-2024-1234",
-                "cvss_base_score": 9.8,
-            }
-        )
-        code, out, err = _run_cli(
-            ["vulnerabilities", "get", "CVE-2024-1234"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0
-        assert err == ""
-        data = json.loads(out)
-        assert data["cve_id"] == "CVE-2024-1234"
-        assert data["cvss_base_score"] == 9.8
-
-    def test_alias_vulns_resolves_to_vulnerabilities(
-        self, httpx_mock: HTTPXMock
-    ):
-        httpx_mock.add_response(
-            json={"items": [], "total": 0, "offset": 0, "limit": 5}
-        )
-        code, out, err = _run_cli(
-            ["vulns", "list", "--limit", "5"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0
-        request = httpx_mock.get_request()
-        assert "/vulnerabilities" in str(request.url)
-
-    def test_compact_output_single_line(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={"items": [], "total": 0, "offset": 0, "limit": 10}
-        )
-        code, out, err = _run_cli(
-            ["vulnerabilities", "list", "--limit", "10", "--compact"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0
-        assert "\n" not in out.strip() or out.strip().count("\n") == 0
-        data = json.loads(out)
-        assert "items" in data
-
-    def test_api_error_writes_json_to_stderr(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(status_code=404, json={"detail": "Not found"})
-        code, out, err = _run_cli(
-            ["vulnerabilities", "get", "CVE-9999-9999"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 1
-        err_data = json.loads(err)
-        assert "error" in err_data
-        assert err_data.get("status_code") == 404
+                "metadata": {},
+                "has_more": False,
+            },
+        ),
+    ],
+)
+def test_output_modes(flags, expected, run_cli):
+    code, out, err, _ = run_cli(
+        ["stories", "list", *flags],
+        payload={"data": [{"uuid": "one"}], "total": 1, "offset": 0, "limit": 10},
+    )
+    assert (code, err) == (0, "")
+    assert json.loads(out) == expected
+    if "--compact" in flags:
+        assert out.count("\n") == 1
 
 
-class TestCliIdentifierDispatch:
-    """Methods whose first positional arg isn't named ``identifier`` must
-    still receive the CLI identifier (regression test for geo/tenants/assets).
-    """
-
-    def test_geographies_get_passes_identifier(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(json={"code": "US", "name": "United States"})
-        code, out, err = _run_cli(
-            ["geo", "get", "US"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0, err
-        request = httpx_mock.get_request()
-        assert request.url.path == "/v1/geographies/US"
-        assert json.loads(out)["code"] == "US"
-
-    def test_tenants_users_passes_identifier(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(
-            json={"items": [], "total": 0, "offset": 0, "limit": 50}
-        )
-        code, out, err = _run_cli(
-            ["tenants", "users", "tenant-1"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0, err
-        request = httpx_mock.get_request()
-        assert request.url.path == "/v1/tenants/tenant-1/users"
-
-    def test_assets_profile_for_passes_identifier(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(json={"count": 3})
-        code, out, err = _run_cli(
-            ["assets", "profile_for", "host"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0, err
-        request = httpx_mock.get_request()
-        assert request.url.path == "/v1/assets/profile/host"
-
-    def test_method_without_args_not_treated_as_identifier(
-        self, httpx_mock: HTTPXMock
-    ):
-        httpx_mock.add_response(json=[{"code": "US"}])
-        code, out, err = _run_cli(
-            ["geo", "list"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0, err
-        request = httpx_mock.get_request()
-        assert request.url.path == "/v1/geographies"
+def test_inference_output_preserves_decision_metadata(run_cli):
+    payload = {
+        "data": [],
+        "total": 0,
+        "offset": 0,
+        "limit": 50,
+        "resolution": {"status": "unresolved"},
+        "normalized_request": None,
+        "mode": "configuration_match",
+        "coverage": {"evaluation_complete": False},
+    }
+    code, out, err, _ = run_cli(
+        ["vtpcs", "search", '{"vendor":"acme","product":"widget"}'], payload=payload
+    )
+    assert (code, err) == (0, "")
+    result = json.loads(out)
+    for key in ("resolution", "normalized_request", "mode", "coverage"):
+        assert result[key] == payload[key]
 
 
-class TestCliMultiPositionalDispatch:
-    """Methods requiring more than one positional arg (workspace mutators)
-    must bind every positional, not just the first (regression for the
-    single-``identifier`` dispatch that raised TypeError).
-    """
+def test_no_content_outputs_json_null(run_cli):
+    code, out, err, requests = run_cli(["workspaces", "delete", "ws-1"], status=204)
+    assert (code, err, json.loads(out)) == (0, "", None)
+    assert len(requests) == 1
 
-    def test_remove_member_binds_two_positionals(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(json={"ok": True})
-        code, out, err = _run_cli(
-            ["workspaces", "remove_member", "ws-1", "user-1"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0, err
-        request = httpx_mock.get_request()
-        assert request.method == "DELETE"
-        assert request.url.path == "/v1/workspaces/ws-1/members/user-1"
 
-    def test_remove_entity_binds_three_positionals(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(json={"ok": True})
-        code, out, err = _run_cli(
-            ["workspaces", "remove_entity", "ws-1", "actor", "ent-1"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0, err
-        request = httpx_mock.get_request()
-        assert request.method == "DELETE"
-        assert request.url.path == "/v1/workspaces/ws-1/entities/actor/ent-1"
-
-    def test_add_member_json_body_decoded(self, httpx_mock: HTTPXMock):
-        httpx_mock.add_response(json={"ok": True})
-        code, out, err = _run_cli(
-            [
-                "workspaces",
-                "add_member",
-                "ws-1",
-                '{"user_uuid": "u-1", "role": "admin"}',
-            ],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 0, err
-        request = httpx_mock.get_request()
-        assert request.method == "POST"
-        assert request.url.path == "/v1/workspaces/ws-1/members"
-        assert json.loads(request.content) == {
-            "user_uuid": "u-1",
-            "role": "admin",
-        }
-
-    def test_missing_second_positional_errors(self):
-        code, out, err = _run_cli(
-            ["workspaces", "remove_member", "ws-1"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 1
-        err_data = json.loads(err)
-        assert "positional argument(s)" in err_data["error"]
-        assert "user_uuid" in err_data["error"]
-
-    def test_invalid_json_body_errors(self):
-        code, out, err = _run_cli(
-            ["workspaces", "add_member", "ws-1", "not-json"],
-            env={"MALLORY_API_KEY": TEST_API_KEY},
-        )
-        assert code == 1
-        err_data = json.loads(err)
-        assert "must be valid JSON" in err_data["error"]
+def test_api_errors_go_only_to_stderr(run_cli):
+    code, out, err, _ = run_cli(
+        ["vulnerabilities", "get", "missing"],
+        status=404,
+        payload={"detail": "Not found"},
+    )
+    assert (code, out) == (1, "")
+    assert json.loads(err)["status_code"] == 404

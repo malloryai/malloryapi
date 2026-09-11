@@ -13,7 +13,10 @@ import argparse
 import inspect
 import json
 import sys
+from dataclasses import asdict, is_dataclass
 from typing import Any
+
+import httpx
 
 # Resource name (as used in CLI) -> MalloryApi attribute name
 RESOURCE_ALIASES: dict[str, str] = {
@@ -58,8 +61,14 @@ RESOURCE_NAMES = [
     "vulnerable_configurations",
     "assets",
     "packages",
+    "extensions",
     "geographies",
     "tenants",
+    "findings",
+    "finding_definitions",
+    "profiles",
+    "sightings",
+    "vtpcs",
     "user",
 ]
 
@@ -85,6 +94,11 @@ def _write_error(msg: str, status_code: int | None = None) -> None:
 
 def _serialize_result(result: Any) -> Any:
     """Convert SDK result to JSON-serializable structure."""
+    if is_dataclass(result) and not isinstance(result, type):
+        payload = asdict(result)
+        if hasattr(result, "has_more"):
+            payload["has_more"] = result.has_more
+        return payload
     if hasattr(result, "items") and hasattr(result, "total"):
         return {
             "total": getattr(result, "total", None),
@@ -93,7 +107,7 @@ def _serialize_result(result: Any) -> Any:
             "has_more": getattr(result, "has_more", None),
             "items": list(result),
         }
-    if isinstance(result, (dict, list)):
+    if result is None or isinstance(result, (dict, list, str, int, float, bool)):
         return result
     return str(result)
 
@@ -125,7 +139,10 @@ def _positional_params(fn: Any, supplied: set[str]) -> list[inspect.Parameter]:
     return params
 
 
-def main() -> int:
+def main(
+    argv: list[str] | None = None, *, transport: httpx.BaseTransport | None = None
+) -> int:
+    """Run the CLI with optional arguments and an injectable HTTP boundary."""
     try:
         from malloryapi import MalloryApi  # noqa: E402
     except ImportError:
@@ -200,54 +217,69 @@ def main() -> int:
     parser.add_argument("--q", default=None, help="Search query string")
     parser.add_argument("--types", default=None, help="Search types filter")
     parser.add_argument(
+        "--param",
+        action="append",
+        default=[],
+        metavar="NAME=VALUE",
+        help="Additional SDK keyword argument; JSON values preserve booleans/numbers",
+    )
+    parser.add_argument(
         "--urls",
         action="append",
         default=None,
         help="URLs for references create (repeat or comma-separated)",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    if args.help_resources:
-        client = MalloryApi(api_key=args.api_key or "help")
-        out: dict[str, list[str]] = {}
-        for attr in RESOURCE_NAMES:
-            res = getattr(client, attr, None)
-            if res is not None:
-                out[attr] = _get_public_methods(res)
-        aliases = [
-            f"  {alias} -> {full}" for alias, full in sorted(RESOURCE_ALIASES.items())
-        ]
-        sys.stdout.write(
-            json.dumps(
-                {
-                    "resources": out,
-                    "aliases": RESOURCE_ALIASES,
-                    "alias_help": aliases,
-                },
-                indent=2,
-            )
-            + "\n"
-        )
-        return 0
-
-    if args.resource is None:
+    if args.resource is None and not args.help_resources:
         parser.print_help()
         sys.stderr.write(
             "\nUse malloryapi --help-resources to list resources and methods.\n"
         )
         return 0
 
-    resolved = _resolve_resource_name(args.resource)
-    client_kw: dict[str, Any] = {"api_key": args.api_key}
+    client_kw: dict[str, Any] = {
+        "api_key": (args.api_key or "help") if args.help_resources else args.api_key,
+        "transport": transport,
+    }
     if args.base_url is not None:
         client_kw["base_url"] = args.base_url
     try:
-        client = MalloryApi(**client_kw)
-    except Exception as e:
-        _write_error(str(e))
+        with MalloryApi(**client_kw) as client:
+            if args.help_resources:
+                return _show_resources(client)
+            return _dispatch(client, args)
+    except Exception as exc:
+        _write_error(str(exc))
         return 1
 
+
+def _show_resources(client: Any) -> int:
+    out: dict[str, list[str]] = {}
+    for attr in RESOURCE_NAMES:
+        res = getattr(client, attr, None)
+        if res is not None:
+            out[attr] = _get_public_methods(res)
+    aliases = [
+        f"  {alias} -> {full}" for alias, full in sorted(RESOURCE_ALIASES.items())
+    ]
+    sys.stdout.write(
+        json.dumps(
+            {
+                "resources": out,
+                "aliases": RESOURCE_ALIASES,
+                "alias_help": aliases,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    return 0
+
+
+def _dispatch(client: Any, args: argparse.Namespace) -> int:
+    resolved = _resolve_resource_name(args.resource)
     resource = getattr(client, resolved, None)
     if resource is None:
         _write_error(
@@ -274,28 +306,31 @@ def main() -> int:
         )
         return 1
 
-    kwargs: dict[str, Any] = {}
-    if args.limit is not None:
-        kwargs["limit"] = args.limit
-    if args.offset is not None:
-        kwargs["offset"] = args.offset
-    if args.sort is not None:
-        kwargs["sort"] = args.sort
-    if args.order is not None:
-        kwargs["order"] = args.order
+    kwargs = {
+        name: getattr(args, name)
+        for name in ("limit", "offset", "sort", "order", "period", "q", "types")
+        if getattr(args, name) is not None
+    }
     if args.filter_ is not None:
         kwargs["filter"] = args.filter_
-    if args.period is not None:
-        kwargs["period"] = args.period
-    if args.q is not None:
-        kwargs["q"] = args.q
-    if args.types is not None:
-        kwargs["types"] = args.types
     if args.urls is not None:
         urls: list[str] = []
         for u in args.urls:
             urls.extend(s.strip() for s in u.split(",") if s.strip())
         kwargs["urls"] = urls
+
+    for entry in args.param:
+        name, separator, raw = entry.partition("=")
+        if not separator or not name:
+            _write_error("--param requires NAME=VALUE")
+            return 1
+        if name in kwargs:
+            _write_error(f"Argument '{name}' was supplied more than once")
+            return 1
+        try:
+            kwargs[name] = json.loads(raw)
+        except json.JSONDecodeError:
+            kwargs[name] = raw
 
     pos_params = _positional_params(method_fn, set(kwargs))
     required = [p for p in pos_params if p.default is p.empty]
@@ -313,10 +348,14 @@ def main() -> int:
         return 1
 
     if not required:
-        if args.method == "query" and "q" not in kwargs:
+        if resolved == "search" and args.method == "query" and "q" not in kwargs:
             _write_error("Search query requires --q")
             return 1
-        if args.method == "create" and "urls" not in kwargs:
+        if (
+            resolved == "references"
+            and args.method == "create"
+            and "urls" not in kwargs
+        ):
             _write_error("references create requires --urls")
             return 1
 
@@ -324,17 +363,19 @@ def main() -> int:
     # JSON-decoding any value destined for a ``data`` body parameter.
     bound: list[Any] = []
     for param, raw in zip(pos_params, provided):
-        if param.name == "data":
+        value: Any = raw
+        if param.name in {"data", "query"}:
             try:
-                bound.append(json.loads(raw))
+                value = json.loads(raw)
             except json.JSONDecodeError:
                 _write_error(
-                    f"Argument '{param.name}' for '{args.method}' "
-                    f"must be valid JSON"
+                    f"Argument '{param.name}' for '{args.method}' must be valid JSON"
                 )
                 return 1
+        if param.kind == param.POSITIONAL_ONLY:
+            bound.append(value)
         else:
-            bound.append(raw)
+            kwargs[param.name] = value
 
     try:
         result = method_fn(*bound, **kwargs)

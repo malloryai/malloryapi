@@ -1,7 +1,7 @@
 """malloryapi - Official Python client for the Mallory API."""
 
 from malloryapi._pagination import paginate_async, paginate_sync
-from malloryapi._types import PaginatedResponse
+from malloryapi._types import InferenceResponse, PaginatedResponse
 from malloryapi.client import AsyncMalloryApi, MalloryApi
 from malloryapi.exceptions import (
     APIError,
@@ -15,6 +15,7 @@ __all__ = [
     "MalloryApi",
     "AsyncMalloryApi",
     "PaginatedResponse",
+    "InferenceResponse",
     "paginate_sync",
     "paginate_async",
     "APIError",
