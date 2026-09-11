@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 from malloryapi._types import PaginatedResponse
 from malloryapi.resources._base import (
     AsyncResource,
     SyncResource,
     TrendingPeriod,
+    _parse_paginated,
 )
 
 
@@ -26,8 +28,11 @@ class Organizations(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -39,8 +44,44 @@ class Organizations(SyncResource):
     def get(self, identifier: str) -> dict[str, Any]:
         return self._get(identifier)
 
-    def export(self, identifier: str) -> dict[str, Any]:
-        return self._sub(identifier, "export")
+    def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return self._sub(
+            identifier,
+            "export",
+            params={
+                "relationships_created_after": relationships_created_after,
+                "relationships_created_before": relationships_created_before,
+                **kwargs,
+            },
+        )
+
+    def similar(
+        self,
+        identifier: str,
+        *,
+        threshold: float = -1.0,
+        offset: int = 0,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = self._sub(
+            identifier,
+            "similar",
+            params={
+                "threshold": threshold,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
+        return _parse_paginated(data)
 
     def mentions(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "mentions", params=kwargs)
@@ -55,9 +96,7 @@ class Organizations(SyncResource):
         return self._delete(identifier)
 
     def enrich(self, identifier: str) -> dict[str, Any]:
-        return self._http.post(
-            f"{self._path}/{identifier}/enrich"
-        )
+        return self._http.post(f"{self._path}/{quote(identifier, safe='')}/enrich")
 
 
 class AsyncOrganizations(AsyncResource):
@@ -74,8 +113,11 @@ class AsyncOrganizations(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return await self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -87,34 +129,58 @@ class AsyncOrganizations(AsyncResource):
     async def get(self, identifier: str) -> dict[str, Any]:
         return await self._get(identifier)
 
-    async def export(self, identifier: str) -> dict[str, Any]:
-        return await self._sub(identifier, "export")
-
-    async def mentions(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    async def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         return await self._sub(
-            identifier, "mentions", params=kwargs
+            identifier,
+            "export",
+            params={
+                "relationships_created_after": relationships_created_after,
+                "relationships_created_before": relationships_created_before,
+                **kwargs,
+            },
         )
 
-    async def products(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "products", params=kwargs
+    async def similar(
+        self,
+        identifier: str,
+        *,
+        threshold: float = -1.0,
+        offset: int = 0,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier,
+            "similar",
+            params={
+                "threshold": threshold,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
         )
+        return _parse_paginated(data)
 
-    async def breaches(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "breaches", params=kwargs
-        )
+    async def mentions(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "mentions", params=kwargs)
+
+    async def products(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "products", params=kwargs)
+
+    async def breaches(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "breaches", params=kwargs)
 
     async def delete(self, identifier: str) -> Any:
         return await self._delete(identifier)
 
     async def enrich(self, identifier: str) -> dict[str, Any]:
         return await self._http.post(
-            f"{self._path}/{identifier}/enrich"
+            f"{self._path}/{quote(identifier, safe='')}/enrich"
         )

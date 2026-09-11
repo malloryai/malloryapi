@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
-from malloryapi._types import PaginatedResponse
+from malloryapi._types import InferenceResponse, PaginatedResponse
 from malloryapi.resources._base import (
     AsyncResource,
     SyncResource,
-    _parse_paginated,
+    _parse_inference,
 )
 
 
@@ -38,24 +39,24 @@ class VulnerableConfigurations(SyncResource):
         self, configuration_uuid: str
     ) -> dict[str, Any]:
         return self._http.get(
-            f"{self._path}/by-configuration/{configuration_uuid}"
+            f"{self._path}/by-configuration/{quote(configuration_uuid, safe='')}"
         )
 
     def by_vulnerability(
         self, vulnerability_uuid: str
     ) -> dict[str, Any]:
         return self._http.get(
-            f"{self._path}/by-vulnerability/{vulnerability_uuid}"
+            f"{self._path}/by-vulnerability/{quote(vulnerability_uuid, safe='')}"
         )
 
     def search(
         self, query: dict[str, Any], **kwargs: Any
-    ) -> PaginatedResponse:
+    ) -> InferenceResponse:
         params = {k: v for k, v in kwargs.items() if v is not None}
         data = self._http.post(
             f"{self._path}/search", json=query, params=params
         )
-        return _parse_paginated(data)
+        return _parse_inference(data)
 
 
 class AsyncVulnerableConfigurations(AsyncResource):
@@ -84,21 +85,49 @@ class AsyncVulnerableConfigurations(AsyncResource):
         self, configuration_uuid: str
     ) -> dict[str, Any]:
         return await self._http.get(
-            f"{self._path}/by-configuration/{configuration_uuid}"
+            f"{self._path}/by-configuration/{quote(configuration_uuid, safe='')}"
         )
 
     async def by_vulnerability(
         self, vulnerability_uuid: str
     ) -> dict[str, Any]:
         return await self._http.get(
-            f"{self._path}/by-vulnerability/{vulnerability_uuid}"
+            f"{self._path}/by-vulnerability/{quote(vulnerability_uuid, safe='')}"
         )
 
     async def search(
         self, query: dict[str, Any], **kwargs: Any
-    ) -> PaginatedResponse:
+    ) -> InferenceResponse:
         params = {k: v for k, v in kwargs.items() if v is not None}
         data = await self._http.post(
             f"{self._path}/search", json=query, params=params
         )
-        return _parse_paginated(data)
+        return _parse_inference(data)
+
+
+class Vtpcs(SyncResource):
+    """Short-path resource for vulnerable configuration inference."""
+
+    _path = "/vtpcs"
+
+    def search(
+        self, query: dict[str, Any], **kwargs: Any
+    ) -> InferenceResponse:
+        data = self._http.post(
+            f"{self._path}/search", json=query, params=kwargs
+        )
+        return _parse_inference(data)
+
+
+class AsyncVtpcs(AsyncResource):
+    """Async short-path resource for vulnerable configuration inference."""
+
+    _path = "/vtpcs"
+
+    async def search(
+        self, query: dict[str, Any], **kwargs: Any
+    ) -> InferenceResponse:
+        data = await self._http.post(
+            f"{self._path}/search", json=query, params=kwargs
+        )
+        return _parse_inference(data)

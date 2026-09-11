@@ -21,8 +21,11 @@ class TechnologyProductAdvisories(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, **kwargs,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            **kwargs,
         )
 
     def get(self, identifier: str) -> dict[str, Any]:
@@ -31,18 +34,29 @@ class TechnologyProductAdvisories(SyncResource):
     def sources(self) -> Any:
         return self._http.get(f"{self._path}/sources")
 
-    def export(self, identifier: str) -> dict[str, Any]:
-        return self._sub(identifier, "export")
+    def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return self._sub(
+            identifier,
+            "export",
+            params={
+                "relationships_created_after": relationships_created_after,
+                "relationships_created_before": relationships_created_before,
+                **kwargs,
+            },
+        )
 
     def products(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "products", params=kwargs)
 
-    def vulnerabilities(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "vulnerabilities", params=kwargs
-        )
+    def vulnerabilities(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "vulnerabilities", params=kwargs)
 
 
 class AsyncTechnologyProductAdvisories(AsyncResource):
@@ -58,8 +72,11 @@ class AsyncTechnologyProductAdvisories(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return await self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, **kwargs,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            **kwargs,
         )
 
     async def get(self, identifier: str) -> dict[str, Any]:
@@ -68,19 +85,26 @@ class AsyncTechnologyProductAdvisories(AsyncResource):
     async def sources(self) -> Any:
         return await self._http.get(f"{self._path}/sources")
 
-    async def export(self, identifier: str) -> dict[str, Any]:
-        return await self._sub(identifier, "export")
-
-    async def products(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    async def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         return await self._sub(
-            identifier, "products", params=kwargs
+            identifier,
+            "export",
+            params={
+                "relationships_created_after": relationships_created_after,
+                "relationships_created_before": relationships_created_before,
+                **kwargs,
+            },
         )
 
-    async def vulnerabilities(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "vulnerabilities", params=kwargs
-        )
+    async def products(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "products", params=kwargs)
+
+    async def vulnerabilities(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "vulnerabilities", params=kwargs)

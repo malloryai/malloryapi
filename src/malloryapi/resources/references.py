@@ -11,6 +11,8 @@ from malloryapi.resources._base import (
     _parse_paginated,
 )
 
+_OMIT = object()
+
 
 class References(SyncResource):
     _path = "/references"
@@ -26,8 +28,11 @@ class References(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -40,51 +45,30 @@ class References(SyncResource):
     def entities(self, identifier: str) -> Any:
         return self._sub(identifier, "entities")
 
-    def create(self, urls: list[str]) -> Any:
-        return self._post(json={"urls": urls})
+    def create(self, urls: list[str], *, submitter: Any = _OMIT) -> Any:
+        data: dict[str, Any] = {"urls": urls}
+        if submitter is not _OMIT:
+            data["submitter"] = submitter
+        return self._post(json=data)
 
-    def threat_actors(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "threat-actors", params=kwargs
-        )
+    def threat_actors(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "threat-actors", params=kwargs)
 
-    def threat_actor_mentions(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "threat-actor-mentions", params=kwargs
-        )
+    def threat_actor_mentions(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "threat-actor-mentions", params=kwargs)
 
-    def vulnerabilities(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "vulnerabilities", params=kwargs
-        )
+    def vulnerabilities(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "vulnerabilities", params=kwargs)
 
-    def vulnerability_mentions(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "vulnerability-mentions", params=kwargs
-        )
+    def vulnerability_mentions(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "vulnerability-mentions", params=kwargs)
 
-    def observables(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
-        data = self._sub(
-            identifier, "observables", params=kwargs
-        )
+    def observables(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = self._sub(identifier, "observables", params=kwargs)
         return _parse_paginated(data)
 
-    def citations(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
-        data = self._sub(
-            identifier, "citations", params=kwargs
-        )
+    def citations(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = self._sub(identifier, "citations", params=kwargs)
         return _parse_paginated(data)
 
 
@@ -102,8 +86,11 @@ class AsyncReferences(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return await self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -116,49 +103,28 @@ class AsyncReferences(AsyncResource):
     async def entities(self, identifier: str) -> Any:
         return await self._sub(identifier, "entities")
 
-    async def create(self, urls: list[str]) -> Any:
-        return await self._post(json={"urls": urls})
+    async def create(self, urls: list[str], *, submitter: Any = _OMIT) -> Any:
+        data: dict[str, Any] = {"urls": urls}
+        if submitter is not _OMIT:
+            data["submitter"] = submitter
+        return await self._post(json=data)
 
-    async def threat_actors(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "threat-actors", params=kwargs
-        )
+    async def threat_actors(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "threat-actors", params=kwargs)
 
-    async def threat_actor_mentions(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "threat-actor-mentions", params=kwargs
-        )
+    async def threat_actor_mentions(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "threat-actor-mentions", params=kwargs)
 
-    async def vulnerabilities(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "vulnerabilities", params=kwargs
-        )
+    async def vulnerabilities(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "vulnerabilities", params=kwargs)
 
-    async def vulnerability_mentions(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "vulnerability-mentions", params=kwargs
-        )
+    async def vulnerability_mentions(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "vulnerability-mentions", params=kwargs)
 
-    async def observables(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
-        data = await self._sub(
-            identifier, "observables", params=kwargs
-        )
+    async def observables(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = await self._sub(identifier, "observables", params=kwargs)
         return _parse_paginated(data)
 
-    async def citations(
-        self, identifier: str, **kwargs: Any
-    ) -> PaginatedResponse:
-        data = await self._sub(
-            identifier, "citations", params=kwargs
-        )
+    async def citations(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = await self._sub(identifier, "citations", params=kwargs)
         return _parse_paginated(data)

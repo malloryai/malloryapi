@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 from malloryapi._types import PaginatedResponse
 from malloryapi.resources._base import (
@@ -27,8 +28,11 @@ class ThreatActors(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -40,54 +44,76 @@ class ThreatActors(SyncResource):
     def get(self, identifier: str) -> dict[str, Any]:
         return self._get(identifier)
 
-    def export(self, identifier: str) -> dict[str, Any]:
-        return self._sub(identifier, "export")
+    def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return self._sub(
+            identifier,
+            "export",
+            params={
+                "relationships_created_after": relationships_created_after,
+                "relationships_created_before": relationships_created_before,
+                **kwargs,
+            },
+        )
+
+    def breaches(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        return _parse_paginated(self._sub(identifier, "breaches", params=kwargs))
+
+    def breaches_overview(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        return _parse_paginated(
+            self._sub(identifier, "breaches/overview", params=kwargs)
+        )
+
+    def similar(
+        self,
+        identifier: str,
+        *,
+        threshold: float = -1.0,
+        offset: int = 0,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = self._sub(
+            identifier,
+            "similar",
+            params={
+                "threshold": threshold,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
+        return _parse_paginated(data)
 
     def mentions(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "mentions", params=kwargs)
 
-    def observables(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    def observables(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "observables", params=kwargs)
 
-    def attack_patterns(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "attack_patterns", params=kwargs
-        )
+    def attack_patterns(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "attack_patterns", params=kwargs)
 
-    def attack_patterns_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "attack_patterns/overview", params=kwargs
-        )
+    def attack_patterns_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "attack_patterns/overview", params=kwargs)
 
-    def exploitations(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "exploitations", params=kwargs
-        )
+    def exploitations(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "exploitations", params=kwargs)
 
-    def exploitations_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "exploitations/overview", params=kwargs
-        )
+    def exploitations_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "exploitations/overview", params=kwargs)
 
     def malware(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "malware", params=kwargs)
 
-    def malware_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "malware/overview", params=kwargs
-        )
+    def malware_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "malware/overview", params=kwargs)
 
     def source_geographies(
         self,
@@ -112,12 +138,8 @@ class ThreatActors(SyncResource):
         data = self._sub(identifier, "source-geographies", params=params)
         return _parse_paginated(data)
 
-    def source_geographies_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "source-geographies/overview", params=kwargs
-        )
+    def source_geographies_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "source-geographies/overview", params=kwargs)
 
     def target_geographies(
         self,
@@ -142,12 +164,8 @@ class ThreatActors(SyncResource):
         data = self._sub(identifier, "target-geographies", params=params)
         return _parse_paginated(data)
 
-    def target_geographies_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "target-geographies/overview", params=kwargs
-        )
+    def target_geographies_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "target-geographies/overview", params=kwargs)
 
     def target_industries(
         self,
@@ -172,20 +190,14 @@ class ThreatActors(SyncResource):
         data = self._sub(identifier, "target-industries", params=params)
         return _parse_paginated(data)
 
-    def target_industries_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "target-industries/overview", params=kwargs
-        )
+    def target_industries_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "target-industries/overview", params=kwargs)
 
     def delete(self, identifier: str) -> Any:
         return self._delete(identifier)
 
     def enrich(self, identifier: str) -> dict[str, Any]:
-        return self._http.post(
-            f"{self._path}/{identifier}/enrich"
-        )
+        return self._http.post(f"{self._path}/{quote(identifier, safe='')}/enrich")
 
 
 class AsyncThreatActors(AsyncResource):
@@ -202,8 +214,11 @@ class AsyncThreatActors(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return await self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -215,64 +230,78 @@ class AsyncThreatActors(AsyncResource):
     async def get(self, identifier: str) -> dict[str, Any]:
         return await self._get(identifier)
 
-    async def export(self, identifier: str) -> dict[str, Any]:
-        return await self._sub(identifier, "export")
-
-    async def mentions(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    async def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         return await self._sub(
-            identifier, "mentions", params=kwargs
+            identifier,
+            "export",
+            params={
+                "relationships_created_after": relationships_created_after,
+                "relationships_created_before": relationships_created_before,
+                **kwargs,
+            },
         )
 
-    async def observables(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "observables", params=kwargs
-        )
+    async def breaches(self, identifier: str, **kwargs: Any) -> PaginatedResponse:
+        data = await self._sub(identifier, "breaches", params=kwargs)
+        return _parse_paginated(data)
 
-    async def attack_patterns(
+    async def breaches_overview(
         self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "attack_patterns", params=kwargs
-        )
+    ) -> PaginatedResponse:
+        data = await self._sub(identifier, "breaches/overview", params=kwargs)
+        return _parse_paginated(data)
 
-    async def attack_patterns_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "attack_patterns/overview", params=kwargs
+    async def similar(
+        self,
+        identifier: str,
+        *,
+        threshold: float = -1.0,
+        offset: int = 0,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier,
+            "similar",
+            params={
+                "threshold": threshold,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
         )
+        return _parse_paginated(data)
 
-    async def exploitations(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "exploitations", params=kwargs
-        )
+    async def mentions(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "mentions", params=kwargs)
 
-    async def exploitations_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "exploitations/overview", params=kwargs
-        )
+    async def observables(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "observables", params=kwargs)
 
-    async def malware(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "malware", params=kwargs
-        )
+    async def attack_patterns(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "attack_patterns", params=kwargs)
 
-    async def malware_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "malware/overview", params=kwargs
-        )
+    async def attack_patterns_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "attack_patterns/overview", params=kwargs)
+
+    async def exploitations(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "exploitations", params=kwargs)
+
+    async def exploitations_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "exploitations/overview", params=kwargs)
+
+    async def malware(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "malware", params=kwargs)
+
+    async def malware_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "malware/overview", params=kwargs)
 
     async def source_geographies(
         self,
@@ -294,17 +323,11 @@ class AsyncThreatActors(AsyncResource):
             **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
-        data = await self._sub(
-            identifier, "source-geographies", params=params
-        )
+        data = await self._sub(identifier, "source-geographies", params=params)
         return _parse_paginated(data)
 
-    async def source_geographies_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "source-geographies/overview", params=kwargs
-        )
+    async def source_geographies_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "source-geographies/overview", params=kwargs)
 
     async def target_geographies(
         self,
@@ -326,17 +349,11 @@ class AsyncThreatActors(AsyncResource):
             **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
-        data = await self._sub(
-            identifier, "target-geographies", params=params
-        )
+        data = await self._sub(identifier, "target-geographies", params=params)
         return _parse_paginated(data)
 
-    async def target_geographies_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "target-geographies/overview", params=kwargs
-        )
+    async def target_geographies_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "target-geographies/overview", params=kwargs)
 
     async def target_industries(
         self,
@@ -358,22 +375,16 @@ class AsyncThreatActors(AsyncResource):
             **kwargs,
         }
         params = {k: v for k, v in params.items() if v is not None}
-        data = await self._sub(
-            identifier, "target-industries", params=params
-        )
+        data = await self._sub(identifier, "target-industries", params=params)
         return _parse_paginated(data)
 
-    async def target_industries_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "target-industries/overview", params=kwargs
-        )
+    async def target_industries_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "target-industries/overview", params=kwargs)
 
     async def delete(self, identifier: str) -> Any:
         return await self._delete(identifier)
 
     async def enrich(self, identifier: str) -> dict[str, Any]:
         return await self._http.post(
-            f"{self._path}/{identifier}/enrich"
+            f"{self._path}/{quote(identifier, safe='')}/enrich"
         )

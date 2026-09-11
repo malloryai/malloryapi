@@ -14,6 +14,7 @@ class PaginatedResponse:
     total: int = 0
     offset: int = 0
     limit: int = 100
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __len__(self) -> int:
         return len(self.items)
@@ -28,3 +29,13 @@ class PaginatedResponse:
     def has_more(self) -> bool:
         """Whether there are more pages available."""
         return self.offset + self.limit < self.total
+
+
+@dataclass
+class InferenceResponse(PaginatedResponse):
+    """Paginated inference results with product-resolution decision metadata."""
+
+    resolution: dict[str, Any] | None = None
+    normalized_request: dict[str, Any] | None = None
+    mode: str | None = None
+    coverage: dict[str, Any] | None = None

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 from malloryapi._types import PaginatedResponse
 from malloryapi.resources._base import (
@@ -18,14 +19,24 @@ class Exports(SyncResource):
     def list(self, **kwargs: Any) -> PaginatedResponse:
         params = {k: v for k, v in kwargs.items() if v is not None}
         data = self._http.get(self._path, params=params)
-        return _parse_paginated(data)
+        return _parse_paginated(
+            data,
+            items_key="exports",
+            total_key="total_found",
+            is_paginated=False,
+        )
 
     def history(self, **kwargs: Any) -> PaginatedResponse:
         params = {k: v for k, v in kwargs.items() if v is not None}
         data = self._http.get(
             f"{self._path}/history", params=params
         )
-        return _parse_paginated(data)
+        return _parse_paginated(
+            data,
+            items_key="exports",
+            total_key="total_found",
+            is_paginated=False,
+        )
 
     def latest(self, **kwargs: Any) -> dict[str, Any]:
         params = {k: v for k, v in kwargs.items() if v is not None}
@@ -36,7 +47,7 @@ class Exports(SyncResource):
     def get(self, uuid: str, **kwargs: Any) -> dict[str, Any]:
         params = {k: v for k, v in kwargs.items() if v is not None}
         return self._http.get(
-            f"{self._path}/{uuid}", params=params
+            f"{self._path}/{quote(uuid, safe='')}", params=params
         )
 
 
@@ -46,14 +57,24 @@ class AsyncExports(AsyncResource):
     async def list(self, **kwargs: Any) -> PaginatedResponse:
         params = {k: v for k, v in kwargs.items() if v is not None}
         data = await self._http.get(self._path, params=params)
-        return _parse_paginated(data)
+        return _parse_paginated(
+            data,
+            items_key="exports",
+            total_key="total_found",
+            is_paginated=False,
+        )
 
     async def history(self, **kwargs: Any) -> PaginatedResponse:
         params = {k: v for k, v in kwargs.items() if v is not None}
         data = await self._http.get(
             f"{self._path}/history", params=params
         )
-        return _parse_paginated(data)
+        return _parse_paginated(
+            data,
+            items_key="exports",
+            total_key="total_found",
+            is_paginated=False,
+        )
 
     async def latest(self, **kwargs: Any) -> dict[str, Any]:
         params = {k: v for k, v in kwargs.items() if v is not None}
@@ -64,5 +85,5 @@ class AsyncExports(AsyncResource):
     async def get(self, uuid: str, **kwargs: Any) -> dict[str, Any]:
         params = {k: v for k, v in kwargs.items() if v is not None}
         return await self._http.get(
-            f"{self._path}/{uuid}", params=params
+            f"{self._path}/{quote(uuid, safe='')}", params=params
         )

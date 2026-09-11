@@ -37,6 +37,20 @@ def _build_headers(api_key: str) -> dict[str, str]:
     }
 
 
+def _clean_params(params: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Drop absent query values while preserving falsey, meaningful values."""
+    if params is None:
+        return None
+    return {key: value for key, value in params.items() if value is not None}
+
+
+def _decode_success_response(response: httpx.Response) -> Any:
+    """Decode a successful response, including documented empty successes."""
+    if response.status_code == 204:
+        return None
+    return response.json()
+
+
 def _handle_error_response(response: httpx.Response) -> None:
     """Raise the appropriate exception for non-2xx responses."""
     status = response.status_code
@@ -76,6 +90,12 @@ def _handle_error_response(response: httpx.Response) -> None:
     )
 
 
+def _decode_response(response: httpx.Response) -> Any:
+    if response.status_code >= 400:
+        _handle_error_response(response)
+    return _decode_success_response(response)
+
+
 class SyncHttpClient:
     """Synchronous HTTP client backed by httpx."""
 
@@ -84,6 +104,8 @@ class SyncHttpClient:
         api_key: str | None = None,
         base_url: str = DEFAULT_BASE_URL,
         timeout: float = DEFAULT_TIMEOUT,
+        *,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
         resolved_key = _resolve_api_key(api_key)
         self.base_url = base_url.rstrip("/")
@@ -91,6 +113,7 @@ class SyncHttpClient:
             base_url=self.base_url,
             headers=_build_headers(resolved_key),
             timeout=timeout,
+            transport=transport,
         )
 
     def get(
@@ -98,10 +121,8 @@ class SyncHttpClient:
         path: str,
         params: dict[str, Any] | None = None,
     ) -> Any:
-        response = self._client.get(path, params=params)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = self._client.get(path, params=_clean_params(params))
+        return _decode_response(response)
 
     def post(
         self,
@@ -109,40 +130,34 @@ class SyncHttpClient:
         json: Any = None,
         params: dict[str, Any] | None = None,
     ) -> Any:
-        response = self._client.post(path, json=json, params=params)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = self._client.post(path, json=json, params=_clean_params(params))
+        return _decode_response(response)
 
     def put(
         self,
         path: str,
         json: Any = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
-        response = self._client.put(path, json=json)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = self._client.put(path, json=json, params=_clean_params(params))
+        return _decode_response(response)
 
     def patch(
         self,
         path: str,
         json: Any = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
-        response = self._client.patch(path, json=json)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = self._client.patch(path, json=json, params=_clean_params(params))
+        return _decode_response(response)
 
     def delete(
         self,
         path: str,
         params: dict[str, Any] | None = None,
     ) -> Any:
-        response = self._client.delete(path, params=params)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = self._client.delete(path, params=_clean_params(params))
+        return _decode_response(response)
 
     def close(self) -> None:
         self._client.close()
@@ -156,6 +171,8 @@ class AsyncHttpClient:
         api_key: str | None = None,
         base_url: str = DEFAULT_BASE_URL,
         timeout: float = DEFAULT_TIMEOUT,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         resolved_key = _resolve_api_key(api_key)
         self.base_url = base_url.rstrip("/")
@@ -163,6 +180,7 @@ class AsyncHttpClient:
             base_url=self.base_url,
             headers=_build_headers(resolved_key),
             timeout=timeout,
+            transport=transport,
         )
 
     async def get(
@@ -170,10 +188,8 @@ class AsyncHttpClient:
         path: str,
         params: dict[str, Any] | None = None,
     ) -> Any:
-        response = await self._client.get(path, params=params)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = await self._client.get(path, params=_clean_params(params))
+        return _decode_response(response)
 
     async def post(
         self,
@@ -182,41 +198,39 @@ class AsyncHttpClient:
         params: dict[str, Any] | None = None,
     ) -> Any:
         response = await self._client.post(
-            path, json=json, params=params
+            path, json=json, params=_clean_params(params)
         )
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        return _decode_response(response)
 
     async def put(
         self,
         path: str,
         json: Any = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
-        response = await self._client.put(path, json=json)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = await self._client.put(
+            path, json=json, params=_clean_params(params)
+        )
+        return _decode_response(response)
 
     async def patch(
         self,
         path: str,
         json: Any = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
-        response = await self._client.patch(path, json=json)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = await self._client.patch(
+            path, json=json, params=_clean_params(params)
+        )
+        return _decode_response(response)
 
     async def delete(
         self,
         path: str,
         params: dict[str, Any] | None = None,
     ) -> Any:
-        response = await self._client.delete(path, params=params)
-        if response.status_code >= 400:
-            _handle_error_response(response)
-        return response.json()
+        response = await self._client.delete(path, params=_clean_params(params))
+        return _decode_response(response)
 
     async def aclose(self) -> None:
         await self._client.aclose()

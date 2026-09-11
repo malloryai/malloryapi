@@ -6,7 +6,7 @@ from typing import Any, Literal
 from urllib.parse import quote
 
 from malloryapi._http import AsyncHttpClient, SyncHttpClient
-from malloryapi._types import PaginatedResponse
+from malloryapi._types import InferenceResponse, PaginatedResponse
 
 TrendingPeriod = Literal["1d", "7d", "30d"]
 
@@ -56,15 +56,21 @@ class SyncResource:
         self,
         identifier: str,
         json: Any = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
-        return self._http.patch(f"{self._path}/{quote(identifier, safe='')}", json=json)
+        return self._http.patch(
+            f"{self._path}/{quote(identifier, safe='')}", json=json, params=params
+        )
 
     def _put(
         self,
         identifier: str,
         json: Any = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
-        return self._http.put(f"{self._path}/{quote(identifier, safe='')}", json=json)
+        return self._http.put(
+            f"{self._path}/{quote(identifier, safe='')}", json=json, params=params
+        )
 
     def _delete(self, identifier: str) -> Any:
         return self._http.delete(f"{self._path}/{quote(identifier, safe='')}")
@@ -113,18 +119,20 @@ class AsyncResource:
         self,
         identifier: str,
         json: Any = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
         return await self._http.patch(
-            f"{self._path}/{quote(identifier, safe='')}", json=json
+            f"{self._path}/{quote(identifier, safe='')}", json=json, params=params
         )
 
     async def _put(
         self,
         identifier: str,
         json: Any = None,
+        params: dict[str, Any] | None = None,
     ) -> Any:
         return await self._http.put(
-            f"{self._path}/{quote(identifier, safe='')}", json=json
+            f"{self._path}/{quote(identifier, safe='')}", json=json, params=params
         )
 
     async def _delete(self, identifier: str) -> Any:
@@ -134,15 +142,68 @@ class AsyncResource:
 # -- helpers -----------------------------------------------------------
 
 
-def _parse_paginated(data: Any) -> PaginatedResponse:
+def _parse_paginated(
+    data: Any,
+    *,
+    items_key: str | None = None,
+    total_key: str | None = None,
+    is_paginated: bool = True,
+) -> PaginatedResponse:
     """Parse a paginated API response into a PaginatedResponse."""
     if isinstance(data, dict):
+        resolved_items_key = items_key
+        if resolved_items_key is None:
+            resolved_items_key = "items" if "items" in data else "data"
+        items = data.get(resolved_items_key, [])
+        resolved_total_key = total_key or "total"
+        total = data.get(resolved_total_key)
+        if total is None:
+            total = len(items)
+        metadata = {
+            key: value
+            for key, value in data.items()
+            if key
+            not in {
+                resolved_items_key,
+                "items",
+                "data",
+                "total",
+                "offset",
+                "limit",
+            }
+        }
+        limit = data.get("limit", 100) if is_paginated else total
         return PaginatedResponse(
-            items=data.get("items", data.get("data", [])),
-            total=data.get("total", 0),
+            items=items,
+            total=total,
             offset=data.get("offset", 0),
-            limit=data.get("limit", 100),
+            limit=limit,
+            metadata=metadata,
         )
     if isinstance(data, list):
         return PaginatedResponse(items=data, total=len(data), offset=0, limit=len(data))
     return PaginatedResponse()
+
+
+def _parse_inference(data: Any) -> InferenceResponse:
+    """Parse an inference envelope without discarding resolution metadata."""
+    parsed = _parse_paginated(data)
+    if not isinstance(data, dict):
+        return InferenceResponse(
+            items=parsed.items,
+            total=parsed.total,
+            offset=parsed.offset,
+            limit=parsed.limit,
+            metadata=parsed.metadata,
+        )
+    return InferenceResponse(
+        items=parsed.items,
+        total=parsed.total,
+        offset=parsed.offset,
+        limit=parsed.limit,
+        metadata=parsed.metadata,
+        resolution=data.get("resolution"),
+        normalized_request=data.get("normalized_request"),
+        mode=data.get("mode"),
+        coverage=data.get("coverage"),
+    )

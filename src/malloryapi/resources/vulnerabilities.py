@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import quote
 
 from malloryapi._types import PaginatedResponse
 from malloryapi.resources._base import (
@@ -26,8 +27,11 @@ class Vulnerabilities(SyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -44,32 +48,77 @@ class Vulnerabilities(SyncResource):
             params={"offset": offset, "limit": limit, **kwargs},
         )
         from malloryapi.resources._base import _parse_paginated
+
         return _parse_paginated(data)
 
     def get(self, identifier: str) -> dict[str, Any]:
         return self._get(identifier)
 
-    def export(self, identifier: str) -> dict[str, Any]:
-        return self._sub(identifier, "export")
+    def epss_history(
+        self,
+        identifier: str,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+        **kwargs: Any,
+    ) -> list[dict[str, Any]]:
+        return self._sub(
+            identifier,
+            "epss_history",
+            params={"since": since, "until": until, **kwargs},
+        )
 
-    def configurations(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        return self._sub(
+            identifier,
+            "export",
+            params={
+                "relationships_created_after": relationships_created_after,
+                "relationships_created_before": relationships_created_before,
+                **kwargs,
+            },
+        )
+
+    def similar(
+        self,
+        identifier: str,
+        *,
+        threshold: float = -1.0,
+        offset: int = 0,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        from malloryapi.resources._base import _parse_paginated
+
+        data = self._sub(
+            identifier,
+            "similar",
+            params={
+                "threshold": threshold,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
+        )
+        return _parse_paginated(data)
+
+    def configurations(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "configurations", params=kwargs)
 
-    def detection_signatures(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "detection_signatures", params=kwargs
-        )
+    def detection_signatures(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "detection_signatures", params=kwargs)
 
     def exploits(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "exploits", params=kwargs)
 
-    def exploitations(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    def exploitations(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "exploitations", params=kwargs)
 
     def mentions(self, identifier: str, **kwargs: Any) -> Any:
@@ -80,51 +129,34 @@ class Vulnerabilities(SyncResource):
 
     def advisories(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(
-            identifier, "technology_product_advisories",
+            identifier,
+            "technology_product_advisories",
             params=kwargs,
         )
 
     def observables(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "observables", params=kwargs)
 
-    def used_by_malware(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "used_by_malware", params=kwargs
-        )
+    def used_by_malware(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "used_by_malware", params=kwargs)
 
     def malware(self, identifier: str, **kwargs: Any) -> Any:
         return self._sub(identifier, "malware", params=kwargs)
 
-    def malware_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "malware/overview", params=kwargs
-        )
+    def malware_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "malware/overview", params=kwargs)
 
-    def threat_actors(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "threat_actors", params=kwargs
-        )
+    def threat_actors(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "threat_actors", params=kwargs)
 
-    def threat_actors_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return self._sub(
-            identifier, "threat_actors/overview", params=kwargs
-        )
+    def threat_actors_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return self._sub(identifier, "threat_actors/overview", params=kwargs)
 
     def delete(self, identifier: str) -> Any:
         return self._delete(identifier)
 
     def enrich(self, identifier: str) -> dict[str, Any]:
-        return self._http.post(
-            f"{self._path}/{identifier}/enrich"
-        )
+        return self._http.post(f"{self._path}/{quote(identifier, safe='')}/enrich")
 
 
 class AsyncVulnerabilities(AsyncResource):
@@ -141,8 +173,11 @@ class AsyncVulnerabilities(AsyncResource):
         **kwargs: Any,
     ) -> PaginatedResponse:
         return await self._list(
-            offset=offset, limit=limit,
-            sort=sort, order=order, filter=filter,
+            offset=offset,
+            limit=limit,
+            sort=sort,
+            order=order,
+            filter=filter,
             **kwargs,
         )
 
@@ -159,110 +194,114 @@ class AsyncVulnerabilities(AsyncResource):
             params={"offset": offset, "limit": limit, **kwargs},
         )
         from malloryapi.resources._base import _parse_paginated
+
         return _parse_paginated(data)
 
     async def get(self, identifier: str) -> dict[str, Any]:
         return await self._get(identifier)
 
-    async def export(self, identifier: str) -> dict[str, Any]:
-        return await self._sub(identifier, "export")
-
-    async def configurations(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    async def epss_history(
+        self,
+        identifier: str,
+        *,
+        since: str | None = None,
+        until: str | None = None,
+        **kwargs: Any,
+    ) -> list[dict[str, Any]]:
         return await self._sub(
-            identifier, "configurations", params=kwargs
+            identifier,
+            "epss_history",
+            params={"since": since, "until": until, **kwargs},
         )
 
-    async def detection_signatures(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    async def export(
+        self,
+        identifier: str,
+        *,
+        relationships_created_after: str | None = None,
+        relationships_created_before: str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         return await self._sub(
-            identifier, "detection_signatures", params=kwargs
+            identifier,
+            "export",
+            params={
+                "relationships_created_after": relationships_created_after,
+                "relationships_created_before": relationships_created_before,
+                **kwargs,
+            },
         )
 
-    async def exploits(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "exploits", params=kwargs
-        )
+    async def similar(
+        self,
+        identifier: str,
+        *,
+        threshold: float = -1.0,
+        offset: int = 0,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> PaginatedResponse:
+        from malloryapi.resources._base import _parse_paginated
 
-    async def exploitations(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "exploitations", params=kwargs
+        data = await self._sub(
+            identifier,
+            "similar",
+            params={
+                "threshold": threshold,
+                "offset": offset,
+                "limit": limit,
+                **kwargs,
+            },
         )
+        return _parse_paginated(data)
 
-    async def mentions(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "mentions", params=kwargs
-        )
+    async def configurations(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "configurations", params=kwargs)
 
-    async def products(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "products", params=kwargs
-        )
+    async def detection_signatures(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "detection_signatures", params=kwargs)
 
-    async def advisories(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
+    async def exploits(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "exploits", params=kwargs)
+
+    async def exploitations(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "exploitations", params=kwargs)
+
+    async def mentions(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "mentions", params=kwargs)
+
+    async def products(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "products", params=kwargs)
+
+    async def advisories(self, identifier: str, **kwargs: Any) -> Any:
         return await self._sub(
-            identifier, "technology_product_advisories",
+            identifier,
+            "technology_product_advisories",
             params=kwargs,
         )
 
-    async def observables(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "observables", params=kwargs
-        )
+    async def observables(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "observables", params=kwargs)
 
-    async def used_by_malware(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "used_by_malware", params=kwargs
-        )
+    async def used_by_malware(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "used_by_malware", params=kwargs)
 
-    async def malware(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "malware", params=kwargs
-        )
+    async def malware(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "malware", params=kwargs)
 
-    async def malware_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "malware/overview", params=kwargs
-        )
+    async def malware_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "malware/overview", params=kwargs)
 
-    async def threat_actors(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "threat_actors", params=kwargs
-        )
+    async def threat_actors(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "threat_actors", params=kwargs)
 
-    async def threat_actors_overview(
-        self, identifier: str, **kwargs: Any
-    ) -> Any:
-        return await self._sub(
-            identifier, "threat_actors/overview", params=kwargs
-        )
+    async def threat_actors_overview(self, identifier: str, **kwargs: Any) -> Any:
+        return await self._sub(identifier, "threat_actors/overview", params=kwargs)
 
     async def delete(self, identifier: str) -> Any:
         return await self._delete(identifier)
 
     async def enrich(self, identifier: str) -> dict[str, Any]:
         return await self._http.post(
-            f"{self._path}/{identifier}/enrich"
+            f"{self._path}/{quote(identifier, safe='')}/enrich"
         )
