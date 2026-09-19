@@ -14,6 +14,7 @@ import inspect
 import json
 import sys
 from dataclasses import asdict, is_dataclass
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -42,6 +43,10 @@ RESOURCE_NAMES = [
     "attack_patterns",
     "breaches",
     "detection_signatures",
+    "detections",
+    "malware_samples",
+    "malware_sample_analyses",
+    "malware_sample_reports",
     "advisories",
     "weaknesses",
     "stories",
@@ -230,6 +235,15 @@ def main(
         help="URLs for references create (repeat or comma-separated)",
     )
 
+    parser.add_argument(
+        "--input-file", type=Path,
+        help="Read raw bytes for a method's content argument (sample uploads)",
+    )
+    parser.add_argument(
+        "--output", type=Path,
+        help="Save a binary download to this file instead of printing JSON",
+    )
+
     args = parser.parse_args(argv)
 
     if args.resource is None and not args.help_resources:
@@ -306,6 +320,14 @@ def _dispatch(client: Any, args: argparse.Namespace) -> int:
         )
         return 1
 
+    returns_bytes = str(inspect.signature(method_fn).return_annotation) == "bytes"
+    if args.output is not None and not returns_bytes:
+        _write_error("--output is only supported for binary downloads")
+        return 1
+    if returns_bytes and args.output is None:
+        _write_error("Binary downloads require --output FILE")
+        return 1
+
     kwargs = {
         name: getattr(args, name)
         for name in ("limit", "offset", "sort", "order", "period", "q", "types")
@@ -331,6 +353,16 @@ def _dispatch(client: Any, args: argparse.Namespace) -> int:
             kwargs[name] = json.loads(raw)
         except json.JSONDecodeError:
             kwargs[name] = raw
+
+    if args.input_file is not None:
+        content_param = inspect.signature(method_fn).parameters.get("content")
+        if content_param is None or str(content_param.annotation) != "bytes":
+            _write_error("--input-file requires a method accepting binary content")
+            return 1
+        if "content" in kwargs:
+            _write_error("--input-file cannot be combined with --param content")
+            return 1
+        kwargs["content"] = args.input_file.read_bytes()
 
     pos_params = _positional_params(method_fn, set(kwargs))
     required = [p for p in pos_params if p.default is p.empty]
@@ -386,6 +418,16 @@ def _dispatch(client: Any, args: argparse.Namespace) -> int:
             _write_error(str(exc), getattr(exc, "status_code", None))
         else:
             _write_error(str(exc))
+        return 1
+
+    if isinstance(result, bytes):
+        if args.output is None:
+            _write_error("Binary downloads require --output FILE")
+            return 1
+        args.output.write_bytes(result)
+        return 0
+    if args.output is not None:
+        _write_error("--output is only supported for binary downloads")
         return 1
 
     output = _serialize_result(result)

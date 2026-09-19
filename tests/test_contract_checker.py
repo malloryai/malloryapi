@@ -149,6 +149,7 @@ async def test_checker_accepts_complete_transport_contract(spec):
         "operations": 3,
         "query_parameters": 3,
         "path_parameters": 1,
+        "header_parameters": 0,
         "body_contracts": 1,
         "issues": [],
     }
@@ -185,3 +186,40 @@ async def test_checker_preserves_arbitrary_json_body(spec, fault):
         assert result["issues"] == []
     else:
         assert any("arbitrary JSON body" in issue for issue in result["issues"])
+
+
+@pytest.mark.parametrize("drop_header", [False, True])
+async def test_checker_validates_header_parameters(drop_header):
+    class Client:
+        def __init__(self, *, api_key, transport):
+            self._http = httpx.Client(
+                base_url="https://example.test", transport=transport
+            )
+
+        def create(self, *, idempotency_key: str):
+            headers = {} if drop_header else {"Idempotency-Key": idempotency_key}
+            return self._http.post("/v1/samples", headers=headers).json()
+
+        def close(self):
+            self._http.close()
+
+    spec = {
+        "paths": {
+            "/v1/samples": {
+                "post": {
+                    "parameters": [
+                        {
+                            "name": "Idempotency-Key",
+                            "in": "header",
+                            "schema": {"type": "string"},
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    result = await check_client(spec, Client)
+    if drop_header:
+        assert any("header Idempotency-Key" in issue for issue in result["issues"])
+    else:
+        assert result["issues"] == []

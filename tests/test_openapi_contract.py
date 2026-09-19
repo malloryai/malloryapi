@@ -22,6 +22,7 @@ async def test_frozen_public_contract_has_no_sdk_gaps():
         "operations": len(operations),
         "query_parameters": sum(p["in"] == "query" for p in parameters),
         "path_parameters": sum(p["in"] == "path" for p in parameters),
+        "header_parameters": sum(p["in"] == "header" for p in parameters),
         "body_contracts": sum("requestBody" in operation for operation in operations),
     }
     results = await check_contract(spec)
