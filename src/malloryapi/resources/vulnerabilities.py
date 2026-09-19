@@ -10,6 +10,7 @@ from malloryapi.resources._base import (
     AsyncResource,
     SyncResource,
     TrendingPeriod,
+    _parse_paginated,
 )
 
 
@@ -49,6 +50,16 @@ class Vulnerabilities(SyncResource):
         )
         from malloryapi.resources._base import _parse_paginated
 
+        return _parse_paginated(data)
+
+    def detections(
+        self, identifier: str, *, offset: int = 0, limit: int = 100,
+        kind: str | None = None, **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = self._sub(
+            identifier, "detections",
+            params={"offset": offset, "limit": limit, "kind": kind, **kwargs},
+        )
         return _parse_paginated(data)
 
     def get(self, identifier: str) -> dict[str, Any]:
@@ -195,6 +206,16 @@ class AsyncVulnerabilities(AsyncResource):
         )
         from malloryapi.resources._base import _parse_paginated
 
+        return _parse_paginated(data)
+
+    async def detections(
+        self, identifier: str, *, offset: int = 0, limit: int = 100,
+        kind: str | None = None, **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier, "detections",
+            params={"offset": offset, "limit": limit, "kind": kind, **kwargs},
+        )
         return _parse_paginated(data)
 
     async def get(self, identifier: str) -> dict[str, Any]:

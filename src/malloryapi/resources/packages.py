@@ -36,6 +36,17 @@ class Packages(SyncResource):
             **kwargs,
         )
 
+    def search(
+        self, data: dict[str, Any], *, vulnerability_offset: int = 0,
+        compromise_offset: int = 0, limit: int = 50,
+    ) -> dict[str, Any]:
+        """Resolve a versioned package and return both evidence pages and coverage."""
+        return self._post(
+            f"{self._path}/search", json=data,
+            params={"vulnerability_offset": vulnerability_offset,
+                    "compromise_offset": compromise_offset, "limit": limit},
+        )
+
     def get(self, identifier: str) -> dict[str, Any]:
         return self._get(identifier)
 
@@ -129,6 +140,17 @@ class AsyncPackages(AsyncResource):
             order=order,
             include_merged=include_merged,
             **kwargs,
+        )
+
+    async def search(
+        self, data: dict[str, Any], *, vulnerability_offset: int = 0,
+        compromise_offset: int = 0, limit: int = 50,
+    ) -> dict[str, Any]:
+        """Resolve a versioned package and return both evidence pages and coverage."""
+        return await self._post(
+            f"{self._path}/search", json=data,
+            params={"vulnerability_offset": vulnerability_offset,
+                    "compromise_offset": compromise_offset, "limit": limit},
         )
 
     async def get(self, identifier: str) -> dict[str, Any]:

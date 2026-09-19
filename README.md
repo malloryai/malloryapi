@@ -68,7 +68,8 @@ async with AsyncMalloryApi(api_key="sk-...") as client:
 | Products             | `client.products`             | `list`, `get`, `trending`, `search`, `export`, `advisories`, `mentions`                              |
 | Attack Patterns      | `client.attack_patterns`      | `list`, `get`, `trending`, `mentions`, `threat_actors`, `malware`                                    |
 | Breaches             | `client.breaches`             | `list`, `get`, `organizations`                                                                       |
-| Detection Signatures | `client.detection_signatures` | `list`, `get`                                                                                        |
+| Detections           | `client.detections` | `list`, `get`, `revisions`, `content`, `download` |
+| Detection Signatures (legacy) | `client.detection_signatures` | `list`, `get`                                                                                        |
 | Advisories           | `client.advisories`           | `list`, `get`, `export`, `products`, `vulnerabilities`                                               |
 | Weaknesses           | `client.weaknesses`           | `list`, `get`                                                                                        |
 
@@ -100,8 +101,8 @@ async with AsyncMalloryApi(api_key="sk-...") as client:
 | Observables | `client.observables` | Observable CRUD, entities, opinions, tags and enrichment-provider metadata |
 | CVE inference | `client.vulnerable_configurations`, `client.vtpcs` | Product/version inference using either API route |
 
-The SDK exposes all 252 operations in the public OpenAPI snapshot captured on
-September 11, 2026, in both sync and async clients. Existing methods for routes
+The SDK exposes all 269 operations in the public OpenAPI snapshot captured on
+September 19, 2026, in both sync and async clients. Existing methods for routes
 omitted from the public schema remain available for compatibility.
 
 ### Query parameters and request bodies
@@ -122,6 +123,65 @@ client.references.create(
 findings = client.findings.list(limit=20)
 matches = client.assets.list_matches(limit=20)
 ```
+
+### Detections, packages, and malware samples
+
+`client.detections` uses the current `/detections` API. Detection relationships
+are available through `.detections(identifier, ...)` on vulnerabilities, threat
+actors, malware, and attack patterns. The older `detection_signatures` methods
+remain available for servers exposing those legacy routes.
+
+```python
+from pathlib import Path
+
+rules = client.detections.list(kind="sigma", limit=20)
+revisions = client.detections.revisions("detection-uuid")
+manifest = client.detections.content("detection-uuid")
+Path("detection.zip").write_bytes(client.detections.download("detection-uuid"))
+
+result = client.packages.search(
+    {"purl": "pkg:npm/example@1.2.3"},
+    vulnerability_offset=0, compromise_offset=0, limit=50,
+)
+print(result["resolution"], result["coverage"])
+print(result["vulnerabilities"], result["compromises"])
+```
+
+Package search returns the complete dictionary, including independently paged
+vulnerability and compromise evidence. Empty results do not establish that a
+package is safe.
+
+`client.malware_samples` provides `list`, `create`, `providers`, `get`,
+`upload_content`, `analyze`, and `delete`. Creation reserves metadata; upload
+sends bytes directly with their content length. Creation and analysis require
+an `idempotency_key`: generate a key for each logical request and reuse it for
+retries of that request.
+
+```python
+from uuid import uuid4
+
+payload = Path("sample.bin").read_bytes()
+create_key = str(uuid4())  # Keep this key if creation needs to be retried.
+sample = client.malware_samples.create(
+    {"original_filename": "sample.bin", "expected_size_bytes": len(payload)},
+    idempotency_key=create_key,
+)
+client.malware_samples.upload_content(sample["uuid"], payload)
+
+analysis_key = str(uuid4())  # Keep this key if this analysis request is retried.
+request = client.malware_samples.analyze(
+    sample["uuid"], {"integration_uuids": ["integration-uuid"]},
+    idempotency_key=analysis_key,
+)
+analysis = client.malware_sample_analyses.get(request["analyses"][0]["uuid"])
+report = client.malware_sample_reports.get("report-uuid")
+Path("report.json").write_bytes(
+    client.malware_sample_reports.artifact("report-uuid", "report.json")
+)
+```
+
+Detection downloads and report artifacts return exact `bytes`, including JSON
+artifacts. All of these methods are also available on `AsyncMalloryApi`.
 
 ### CVE inference
 
@@ -215,6 +275,9 @@ additional keyword arguments with repeatable `--param NAME=VALUE` options;
 JSON booleans, numbers, lists and objects keep their types.
 
 ```bash
+malloryapi detections list --param kind=sigma --limit 20
+malloryapi detections download DETECTION_UUID --output detection.zip
+malloryapi malware_samples upload_content SAMPLE_UUID --input-file sample.bin
 malloryapi findings list --limit 20
 malloryapi stories get STORY_UUID --param include_proto=true
 malloryapi products search '{"vendor":"apache","product":"http_server"}' --limit 20
@@ -232,10 +295,10 @@ python scripts/check_openapi.py --schema /path/to/openapi.json
 ```
 
 The contract check uses an HTTP mock transport, so it sends no API requests.
-It checks every public method/path, path substitution, query parameter and JSON
-body field in both clients. Regression tests also cover response envelopes and
-no-content success. The frozen fixture excludes descriptive documentation but
-retains operation and schema contracts. Passing checks establish SDK transport
+It checks every public method/path, path substitution, query/header parameter
+and JSON body field in both clients. Regression tests also cover response envelopes,
+no-content success, raw uploads, and binary downloads. The frozen fixture excludes
+descriptive documentation but retains operation and schema contracts. Passing checks establish SDK transport
 coverage; they do not exercise authorization or server-side business validation.
 
 ### Test structure

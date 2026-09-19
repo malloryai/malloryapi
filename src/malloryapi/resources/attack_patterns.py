@@ -9,6 +9,7 @@ from malloryapi.resources._base import (
     AsyncResource,
     SyncResource,
     TrendingPeriod,
+    _parse_paginated,
 )
 
 
@@ -35,6 +36,16 @@ class AttackPatterns(SyncResource):
         self, *, period: TrendingPeriod = "7d", **kwargs: Any
     ) -> PaginatedResponse:
         return self.list(sort=f"trending_{period}", **kwargs)
+
+    def detections(
+        self, identifier: str, *, offset: int = 0, limit: int = 100,
+        kind: str | None = None, **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = self._sub(
+            identifier, "detections",
+            params={"offset": offset, "limit": limit, "kind": kind, **kwargs},
+        )
+        return _parse_paginated(data)
 
     def get(self, identifier: str) -> dict[str, Any]:
         return self._get(identifier)
@@ -90,6 +101,16 @@ class AsyncAttackPatterns(AsyncResource):
         self, *, period: TrendingPeriod = "7d", **kwargs: Any
     ) -> PaginatedResponse:
         return await self.list(sort=f"trending_{period}", **kwargs)
+
+    async def detections(
+        self, identifier: str, *, offset: int = 0, limit: int = 100,
+        kind: str | None = None, **kwargs: Any,
+    ) -> PaginatedResponse:
+        data = await self._sub(
+            identifier, "detections",
+            params={"offset": offset, "limit": limit, "kind": kind, **kwargs},
+        )
+        return _parse_paginated(data)
 
     async def get(self, identifier: str) -> dict[str, Any]:
         return await self._get(identifier)

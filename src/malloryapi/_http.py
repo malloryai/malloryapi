@@ -124,13 +124,35 @@ class SyncHttpClient:
         response = self._client.get(path, params=_clean_params(params))
         return _decode_response(response)
 
+    def get_bytes(
+        self, path: str, params: dict[str, Any] | None = None,
+    ) -> bytes:
+        """Download content unchanged, including JSON artifact files."""
+        response = self._client.get(
+            path, params=_clean_params(params), headers={"Accept": "*/*"}
+        )
+        if not response.is_success:
+            _handle_error_response(response)
+        return response.content
+
+    def put_bytes(self, path: str, content: bytes) -> Any:
+        """Upload raw bytes with the Content-Length required by the API."""
+        response = self._client.put(
+            path, content=content, headers={"Content-Type": "application/octet-stream"}
+        )
+        return _decode_response(response)
+
     def post(
         self,
         path: str,
         json: Any = None,
         params: dict[str, Any] | None = None,
+        *,
+        headers: dict[str, str] | None = None,
     ) -> Any:
-        response = self._client.post(path, json=json, params=_clean_params(params))
+        response = self._client.post(
+            path, json=json, params=_clean_params(params), headers=headers
+        )
         return _decode_response(response)
 
     def put(
@@ -191,14 +213,34 @@ class AsyncHttpClient:
         response = await self._client.get(path, params=_clean_params(params))
         return _decode_response(response)
 
+    async def get_bytes(
+        self, path: str, params: dict[str, Any] | None = None,
+    ) -> bytes:
+        """Download content unchanged, including JSON artifact files."""
+        response = await self._client.get(
+            path, params=_clean_params(params), headers={"Accept": "*/*"}
+        )
+        if not response.is_success:
+            _handle_error_response(response)
+        return response.content
+
+    async def put_bytes(self, path: str, content: bytes) -> Any:
+        """Upload raw bytes with the Content-Length required by the API."""
+        response = await self._client.put(
+            path, content=content, headers={"Content-Type": "application/octet-stream"}
+        )
+        return _decode_response(response)
+
     async def post(
         self,
         path: str,
         json: Any = None,
         params: dict[str, Any] | None = None,
+        *,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         response = await self._client.post(
-            path, json=json, params=_clean_params(params)
+            path, json=json, params=_clean_params(params), headers=headers
         )
         return _decode_response(response)
 

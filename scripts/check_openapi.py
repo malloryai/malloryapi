@@ -1,7 +1,7 @@
 """Check SDK route and parameter coverage without sending network requests.
 
 Run: python scripts/check_openapi.py [--schema path/to/openapi.json]
-The default fixture is a compact snapshot of the public API, captured 2026-09-11.
+The default fixture is a compact snapshot of the public API, captured 2026-09-19.
 This checks transport contracts, not server-side validation of payload values.
 """
 
@@ -89,7 +89,9 @@ def required_args(fn: Any) -> dict:
             continue
         annotation = str(param.annotation)
         args[name] = (
-            []
+            b"AUDIT"
+            if annotation == "bytes"
+            else []
             if annotation.startswith("list")
             else {}
             if "dict" in annotation
@@ -253,6 +255,17 @@ async def check_parameters(
                         f"{method.name}: query {name}={value!r}: "
                         f"expected {expected!r}, got {actual!r}; {error}"
                     )
+        elif param["in"] == "header":
+            argument = name.lower().replace("-", "_")
+            for value in field_values(param["schema"], spec):
+                request, error = await probe(method, {argument: value}, captured)
+                actual = request.headers.get(name) if request else None
+                expected = str(value) if value is not None else None
+                if error or actual != expected:
+                    issues.append(
+                        f"{method.name}: header {name}={value!r}: "
+                        f"expected {expected!r}, got {actual!r}; {error}"
+                    )
         else:
             issues.append(
                 f"{' '.join(key)}: unchecked parameter location {param['in']}"
@@ -372,6 +385,7 @@ async def check_client(spec: dict, client_cls: type) -> dict:
         "operations": len(covered),
         "query_parameters": sum(param["in"] == "query" for param in parameters),
         "path_parameters": sum(param["in"] == "path" for param in parameters),
+        "header_parameters": sum(param["in"] == "header" for param in parameters),
         "body_contracts": sum(json_body(expected[key]) is not None for key in covered),
         "issues": issues,
     }

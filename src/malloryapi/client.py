@@ -26,6 +26,7 @@ from malloryapi.resources.detection_signatures import (
     AsyncDetectionSignatures,
     DetectionSignatures,
 )
+from malloryapi.resources.detections import AsyncDetections, Detections
 from malloryapi.resources.exploitations import (
     AsyncExploitations,
     Exploitations,
@@ -51,6 +52,14 @@ from malloryapi.resources.integrations import (
     Integrations,
 )
 from malloryapi.resources.malware import AsyncMalware, Malware
+from malloryapi.resources.malware_samples import (
+    AsyncMalwareSampleAnalyses,
+    AsyncMalwareSampleReports,
+    AsyncMalwareSamples,
+    MalwareSampleAnalyses,
+    MalwareSampleReports,
+    MalwareSamples,
+)
 from malloryapi.resources.mentions import AsyncMentions, Mentions
 from malloryapi.resources.observables import AsyncObservables, Observables
 from malloryapi.resources.opinions import AsyncOpinions, Opinions
@@ -128,6 +137,10 @@ class MalloryApi:
         self.vulnerabilities = Vulnerabilities(self._http)
         self.threat_actors = ThreatActors(self._http)
         self.malware = Malware(self._http)
+        self.detections = Detections(self._http)
+        self.malware_samples = MalwareSamples(self._http)
+        self.malware_sample_analyses = MalwareSampleAnalyses(self._http)
+        self.malware_sample_reports = MalwareSampleReports(self._http)
         self.exploits = Exploits(self._http)
         self.exploitations = Exploitations(self._http)
         self.organizations = Organizations(self._http)
@@ -232,6 +245,10 @@ class AsyncMalloryApi:
         self.vulnerabilities = AsyncVulnerabilities(self._http)
         self.threat_actors = AsyncThreatActors(self._http)
         self.malware = AsyncMalware(self._http)
+        self.detections = AsyncDetections(self._http)
+        self.malware_samples = AsyncMalwareSamples(self._http)
+        self.malware_sample_analyses = AsyncMalwareSampleAnalyses(self._http)
+        self.malware_sample_reports = AsyncMalwareSampleReports(self._http)
         self.exploits = AsyncExploits(self._http)
         self.exploitations = AsyncExploitations(self._http)
         self.organizations = AsyncOrganizations(self._http)
