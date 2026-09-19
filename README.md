@@ -335,6 +335,19 @@ manager or call `close()` / `aclose()`. Tests should inject this dependency inst
 of replacing private client attributes. CLI tests similarly call
 `main(argv, transport=...)` and capture output with pytest's `capsys` fixture.
 
+## Publishing and retrying a release
+
+Publishing a GitHub release runs the PyPI workflow. If publishing fails before
+upload, merge the workflow fix first, then retry the existing tag from `main`:
+
+```bash
+gh workflow run publish.yml --repo malloryai/malloryapi --ref main -f tag=v0.4.0
+```
+
+The workflow validates the tag, tests its commit, and builds that same commit
+with the version from the tag. Metadata checks and PyPI attestations remain
+enabled. Do not move a release tag or reuse a version already uploaded to PyPI.
+
 ## License
 
 Apache 2.0
